@@ -1,0 +1,12 @@
+<section class="card narrow">
+  <h2>Create account</h2>
+  <%= form_with model: @user, url: registration_path, class: "stack" do |f| %>
+    <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
+    <label>Full name <%= f.text_field :name, required: true, autofocus: true %></label>
+    <label>Email <%= f.email_field :email_address, required: true, autocomplete: "username" %></label>
+    <label>Password (min 8 characters) <%= f.password_field :password, required: true, minlength: 8, maxlength: 72, autocomplete: "new-password" %></label>
+    <label>Confirm password <%= f.password_field :password_confirmation, required: true, maxlength: 72, autocomplete: "new-password" %></label>
+    <div><%= f.submit "Sign up" %></div>
+  <% end %>
+  <p class="muted">Already registered? <%= link_to "Sign in", new_session_path %></p>
+</section>

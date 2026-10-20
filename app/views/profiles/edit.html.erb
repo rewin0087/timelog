@@ -1,0 +1,18 @@
+<section class="card">
+  <h2>Profile &amp; invoice details</h2>
+  <p class="muted">These details appear on your generated invoices. Signed in as <%= @user.email_address %>.</p>
+  <%= form_with model: @user, url: profile_path, method: :patch, class: "stack" do |f| %>
+    <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
+    <label>Full name <%= f.text_field :name, required: true %></label>
+    <label>Address <%= f.text_area :address, rows: 2 %></label>
+    <label>Hourly rate <%= f.number_field :hourly_rate, step: 0.01, min: 0 %></label>
+    <label>Currency (ISO code) <%= f.text_field :currency, maxlength: 3, required: true %></label>
+    <label>Invoice due day (day of the following month) <%= f.number_field :invoice_due_day, min: 1, max: 31, step: 1, required: true %></label>
+    <h3>Bank details</h3>
+    <label>Account name <%= f.text_field :bank_account_name %></label>
+    <label>Account number <%= f.text_field :bank_account_number %></label>
+    <label>Bank name <%= f.text_field :bank_name %></label>
+    <label>SWIFT <%= f.text_field :bank_swift %></label>
+    <div><%= f.submit "Save" %></div>
+  <% end %>
+</section>

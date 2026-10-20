@@ -1,0 +1,23 @@
+:root { --fg:#1f2937; --muted:#6b7280; --line:#e5e7eb; --accent:#2563eb; --bg:#f3f4f6; }
+* { box-sizing: border-box; }
+body { margin:0; font:15px/1.5 system-ui, sans-serif; color:var(--fg); background:var(--bg); }
+.nav { display:flex; gap:24px; align-items:center; padding:12px 24px; background:#fff; border-bottom:1px solid var(--line); }
+.nav nav a { margin-right:16px; text-decoration:none; color:var(--accent); }
+main { max-width:900px; margin:24px auto; padding:0 16px; }
+.card { background:#fff; border:1px solid var(--line); border-radius:8px; padding:20px; margin-bottom:20px; }
+h2 { margin:0 0 12px; font-size:18px; } h2 small { color:var(--muted); font-weight:400; font-size:13px; margin-left:8px; }
+.toolbar { display:flex; justify-content:space-between; align-items:center; }
+.row { display:flex; gap:8px; } .grow { flex:1; } .hours { width:90px; }
+.stack { display:flex; flex-direction:column; gap:12px; max-width:480px; } .stack label { display:flex; flex-direction:column; gap:4px; font-weight:500; }
+input, textarea, select { padding:8px; border:1px solid #d1d5db; border-radius:6px; font:inherit; }
+input[type=submit], .btn { background:var(--accent); color:#fff; border:0; border-radius:6px; padding:8px 14px; text-decoration:none; cursor:pointer; display:inline-block; }
+.tab { padding:6px 12px; border-radius:6px; text-decoration:none; color:var(--accent); } .tab.active { background:var(--accent); color:#fff; }
+table { width:100%; border-collapse:collapse; } th, td { text-align:left; padding:8px; border-bottom:1px solid var(--line); vertical-align:top; }
+th.num, td.num { text-align:right; white-space:nowrap; } tfoot td { font-weight:700; }
+.actions { white-space:nowrap; } .actions form { display:inline; }
+button.link { background:none; border:0; padding:0; font:inherit; color:var(--accent); cursor:pointer; margin-left:8px; } button.danger { color:#dc2626; }
+.muted { color:var(--muted); }
+.flash { padding:10px 14px; border-radius:6px; } .notice { background:#dcfce7; } .alert { background:#fee2e2; }
+.narrow { max-width:420px; margin-left:auto; margin-right:auto; }
+.who { margin-left:auto; display:flex; gap:12px; align-items:center; } .who form { display:inline; } .who a { color:var(--accent); text-decoration:none; }
+h3 { margin:8px 0 0; font-size:15px; }

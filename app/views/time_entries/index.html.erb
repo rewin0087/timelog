@@ -1,0 +1,28 @@
+<section class="card">
+  <div class="toolbar">
+    <h2>Manage timelogs</h2>
+    <%= link_to "+ New timelog", new_time_entry_path, class: "btn" %>
+  </div>
+  <% if @entries.empty? %>
+    <p class="muted">Nothing logged yet.</p>
+  <% else %>
+    <table>
+      <thead><tr><th>Date</th><th>Todo</th><th class="num">Hours</th><th></th></tr></thead>
+      <tbody>
+        <% @entries.each do |e| %>
+          <tr>
+            <td><%= e.log_date.strftime("%a, %d %b %Y") %></td>
+            <td><%= e.todo %></td>
+            <td class="num"><%= number_with_precision(e.hours, precision: 2) %></td>
+            <td class="actions">
+              <%= link_to "Edit", edit_time_entry_path(e) %>
+              <%= button_to "Delete", time_entry_path(e), method: :delete, class: "link danger",
+                            form: { data: { turbo_confirm: "Delete this timelog?" } } %>
+            </td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <p class="muted">Showing the 200 most recent entries.</p>
+  <% end %>
+</section>

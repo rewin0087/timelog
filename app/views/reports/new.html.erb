@@ -1,0 +1,38 @@
+<section class="card">
+  <h2>Export timelog report (PDF)</h2>
+  <p class="muted">Defaults to the current month. Pick a different period to customise.</p>
+
+  <%= form_with url: reports_path, method: :get, class: "stack", data: { turbo: false } do |f| %>
+    <label>Period
+      <%= select_tag :period, options_for_select([
+            ["Current month", "month"], ["Previous month", "previous_month"],
+            ["Last N days", "days"], ["Last N weeks", "weeks"], ["Custom date range", "custom"]
+          ], params[:period] || "month") %>
+    </label>
+    <label>N (days / weeks) <%= number_field_tag :count, params[:count] || 7, min: 1, max: 366 %></label>
+    <label>From <%= date_field_tag :from, params[:from] %></label>
+    <label>To <%= date_field_tag :to, params[:to] %></label>
+    <div>
+      <%= submit_tag "Preview", name: nil %>
+      <%= link_to "Download PDF", export_report_path(request.query_parameters.slice("period", "count", "from", "to", "month")), class: "btn" %>
+    </div>
+  <% end %>
+</section>
+
+<section class="card">
+  <h2>Preview: <%= @range.label %></h2>
+  <% if @entries.empty? %>
+    <p class="muted">No logs in this period.</p>
+  <% else %>
+    <table>
+      <thead><tr><th>Date</th><th>Todo</th><th class="num">Hours</th></tr></thead>
+      <tbody>
+        <% @entries.each do |e| %>
+          <tr><td><%= e.log_date.strftime("%a, %d %b %Y") %></td><td><%= e.todo %></td>
+              <td class="num"><%= number_with_precision(e.hours, precision: 2) %></td></tr>
+        <% end %>
+      </tbody>
+      <tfoot><tr><td></td><td>Total</td><td class="num"><%= number_with_precision(@entries.sum(&:hours), precision: 2) %></td></tr></tfoot>
+    </table>
+  <% end %>
+</section>
