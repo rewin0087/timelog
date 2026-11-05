@@ -24,7 +24,7 @@
 <section class="card">
   <h2>Invoices</h2>
   <% if @invoices.empty? %>
-    <p class="muted">No invoices yet.</p>
+    <p class="muted empty"><span class="empty-icon">🧾</span>No invoices yet.</p>
   <% else %>
     <table>
       <thead><tr><th>No.</th><th>Period</th><th>Date</th><th>Due</th><th class="num">Hours</th><th class="num">Amount</th><th></th></tr></thead>
@@ -37,7 +37,11 @@
             <td><%= i.due_date.strftime("%d %b %Y") %></td>
             <td class="num"><%= number_with_precision(i.hours, precision: 2) %></td>
             <td class="num"><%= i.currency %> <%= number_with_delimiter(number_with_precision(i.amount, precision: 2)) %></td>
-            <td><%= link_to "Download PDF", invoice_path(i) %></td>
+            <td class="actions">
+              <%= button_tag "Preview", type: "button", class: "link",
+                    data: { action: "pdf-preview#open", pdf_preview_url_param: invoice_path(i), pdf_preview_title_param: "Invoice #{i.code}" } %>
+              <%= link_to "Download PDF", invoice_path(i), data: { turbo: false } %>
+            </td>
           </tr>
         <% end %>
       </tbody>

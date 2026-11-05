@@ -7,6 +7,6 @@ class ReportsController < ApplicationController
   def export
     range = ReportRange.new(params)
     send_data TimelogPdf.new(range, Current.user).render,
-              filename: range.filename, type: "application/pdf", disposition: "attachment"
+              filename: range.filename, type: "application/pdf", disposition: params[:inline].present? ? "inline" : "attachment"
   end
 end

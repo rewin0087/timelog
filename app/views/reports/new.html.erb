@@ -2,19 +2,26 @@
   <h2>Export timelog report (PDF)</h2>
   <p class="muted">Defaults to the current month. Pick a different period to customise.</p>
 
-  <%= form_with url: reports_path, method: :get, class: "stack", data: { turbo: false } do |f| %>
+  <% period = params[:period].presence || "month" %>
+  <%= form_with url: reports_path, method: :get, class: "stack", data: { turbo: false, controller: "report-period" } do |f| %>
     <label>Period
       <%= select_tag :period, options_for_select([
             ["Current month", "month"], ["Previous month", "previous_month"],
             ["Last N days", "days"], ["Last N weeks", "weeks"], ["Custom date range", "custom"]
-          ], params[:period] || "month") %>
+          ], period), data: { report_period_target: "period", action: "report-period#toggle" } %>
     </label>
-    <label>N (days / weeks) <%= number_field_tag :count, params[:count] || 7, min: 1, max: 366 %></label>
-    <label>From <%= date_field_tag :from, params[:from] %></label>
-    <label>To <%= date_field_tag :to, params[:to] %></label>
-    <div>
-      <%= submit_tag "Preview", name: nil %>
-      <%= link_to "Download PDF", export_report_path(request.query_parameters.slice("period", "count", "from", "to", "month")), class: "btn" %>
+    <label data-report-period-target="field" data-periods="days weeks" <%= "hidden" unless period.in?(%w[days weeks]) %>>
+      <span>Number of <span data-report-period-target="unit"><%= period == "weeks" ? "weeks" : "days" %></span></span>
+      <%= number_field_tag :count, params[:count] || 7, min: 1, max: 366 %>
+    </label>
+    <label data-report-period-target="field" data-periods="custom" <%= "hidden" unless period == "custom" %>>From <%= date_field_tag :from, params[:from] %></label>
+    <label data-report-period-target="field" data-periods="custom" <%= "hidden" unless period == "custom" %>>To <%= date_field_tag :to, params[:to] %></label>
+    <div class="form-actions">
+      <%= submit_tag "Show entries", name: nil, class: "btn-secondary" %>
+      <%= button_tag "Preview PDF", type: "button", class: "btn btn-secondary",
+            data: { action: "pdf-preview#open", pdf_preview_url_param: export_report_path, pdf_preview_title_param: "Timelog report" } %>
+      <%= link_to "Download PDF", export_report_path(request.query_parameters.slice("period", "count", "from", "to", "month")), class: "btn",
+            data: { turbo: false, action: "pdf-preview#download", pdf_preview_url_param: export_report_path } %>
     </div>
   <% end %>
 </section>
@@ -22,7 +29,7 @@
 <section class="card">
   <h2>Preview: <%= @range.label %></h2>
   <% if @entries.empty? %>
-    <p class="muted">No logs in this period.</p>
+    <p class="muted empty"><span class="empty-icon">🌱</span>No logs in this period.</p>
   <% else %>
     <table>
       <thead><tr><th>Date</th><th>Todo</th><th class="num">Hours</th></tr></thead>

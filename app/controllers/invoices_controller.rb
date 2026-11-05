@@ -31,7 +31,7 @@ class InvoicesController < ApplicationController
   def show
     invoice = Current.user.invoices.find(params[:id])
     send_data InvoicePdf.new(invoice).render,
-              filename: invoice.filename, type: "application/pdf", disposition: "attachment"
+              filename: invoice.filename, type: "application/pdf", disposition: params[:inline].present? ? "inline" : "attachment"
   end
 
   private

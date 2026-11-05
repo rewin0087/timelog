@@ -3,23 +3,27 @@
   <head>
     <title>Timelog</title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="view-transition" content="same-origin">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
-  <body>
+  <body data-controller="pdf-preview">
     <header class="nav">
-      <strong>⏱ Timelog</strong>
+      <%= link_to root_path, class: "brand" do %><span class="brand-mark">⏱</span> Timelog<% end %>
       <% if authenticated? %>
         <nav>
-          <%= link_to "Dashboard", root_path %>
-          <%= link_to "Manage logs", time_entries_path %>
-          <%= link_to "Export report", reports_path %>
-          <%= link_to "Invoices", invoices_path %>
+          <% [["Dashboard", root_path, "dashboard"], ["Manage logs", time_entries_path, "time_entries"],
+              ["Export report", reports_path, "reports"], ["Invoices", invoices_path, "invoices"]].each do |label, path, ctrl| %>
+            <%= link_to label, path, class: ("active" if controller_name == ctrl) %>
+          <% end %>
         </nav>
         <span class="who">
-          <%= link_to Current.user.name, edit_profile_path %>
+          <%= link_to edit_profile_path do %><span class="avatar"><%= Current.user.name.to_s.split.map(&:first).first(2).join.upcase %></span> <%= Current.user.name %><% end %>
           <%= button_to "Sign out", session_path, method: :delete, class: "link" %>
         </span>
       <% end %>
@@ -29,5 +33,17 @@
       <% if alert %><p class="flash alert"><%= alert %></p><% end %>
       <%= yield %>
     </main>
+    <% if authenticated? %>
+      <dialog class="pdf-modal" data-pdf-preview-target="dialog" data-action="click->pdf-preview#backdrop close->pdf-preview#closed">
+        <div class="pdf-modal-head">
+          <strong data-pdf-preview-target="title">PDF preview</strong>
+          <div class="pdf-modal-actions">
+            <a class="btn" data-pdf-preview-target="download" data-turbo="false" download>Download PDF</a>
+            <button type="button" class="btn btn-secondary" data-action="pdf-preview#close">Close</button>
+          </div>
+        </div>
+        <iframe data-pdf-preview-target="frame" title="PDF preview"></iframe>
+      </dialog>
+    <% end %>
   </body>
 </html>

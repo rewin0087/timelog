@@ -5,5 +5,5 @@
   <label>Date <%= f.date_field :log_date, required: true %></label>
   <label>Todo <%= f.text_area :todo, rows: 3, required: true %></label>
   <p class="muted">Hours are calculated automatically from the date (160h ÷ weekdays in that month = one day, shared by that day's todos; weekends get 0).</p>
-  <div><%= f.submit %> <%= link_to "Cancel", time_entries_path %></div>
+  <div class="form-actions"><%= f.submit %> <%= link_to "Cancel", time_entries_path, class: "btn btn-secondary" %></div>
 <% end %>
