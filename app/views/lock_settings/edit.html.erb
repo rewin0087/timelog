@@ -1,0 +1,41 @@
+<% setup = !@user.lock_configured? %>
+<section class="card narrow <%= "auth" if setup %>">
+  <div class="lock-settings-head">
+    <span class="lock-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+    <h2><%= setup ? "Set up your lock screen" : "Lock screen" %></h2>
+  </div>
+  <p class="muted">
+    <% if setup %>
+      Choose a 4–8 digit code. It unlocks the screen after it locks, so nobody else can use your signed-in session.
+    <% else %>
+      Change your lock code or how long the app waits before locking itself.
+    <% end %>
+  </p>
+
+  <%= form_with model: @user, url: lock_settings_path, method: :patch, class: "stack" do |f| %>
+    <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
+    <% unless setup %>
+      <label>Current lock code or account password
+        <%= password_field_tag :current_secret, nil, required: true, autocomplete: "current-password" %>
+      </label>
+    <% end %>
+    <label><%= setup ? "Lock code" : "New lock code (leave blank to keep)" %>
+      <%= f.password_field :lock_pin, required: setup, inputmode: "numeric", pattern: "[0-9]{4,8}", minlength: 4, maxlength: 8,
+            autocomplete: "new-password", autofocus: setup, title: "4 to 8 digits" %>
+    </label>
+    <label>Confirm lock code
+      <%= f.password_field :lock_pin_confirmation, required: setup, inputmode: "numeric", pattern: "[0-9]{4,8}", maxlength: 8, autocomplete: "new-password" %>
+    </label>
+    <label>Lock automatically after inactivity
+      <%= f.select :auto_lock_minutes, User::AUTO_LOCK_OPTIONS %>
+    </label>
+    <p class="muted">Lock by hand any time with the 🔒 button in the sidebar or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>.</p>
+    <div class="form-actions">
+      <%= f.submit setup ? "Turn on lock screen" : "Save" %>
+      <% unless setup %><%= link_to "Cancel", edit_profile_path, class: "btn btn-secondary" %><% end %>
+    </div>
+  <% end %>
+  <% if setup %>
+    <div class="muted lock-foot">Not you? <%= button_to "Sign out", session_path, method: :delete, class: "link" %></div>
+  <% end %>
+</section>

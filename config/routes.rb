@@ -2,6 +2,11 @@ Rails.application.routes.draw do
   resource :session
   resource :registration, only: %i[new create], path: "signup"
   resource :profile, only: %i[edit update]
+  resource :theme, only: :update
+  resource :lock, only: %i[show create destroy] do
+    post :heartbeat
+  end
+  resource :lock_settings, only: %i[edit update]
   resources :invoices, only: %i[index create show]
   root "dashboard#show"
 

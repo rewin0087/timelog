@@ -16,3 +16,14 @@
     <div class="form-actions"><%= f.submit "Save" %></div>
   <% end %>
 </section>
+
+<section class="card lock-summary">
+  <div>
+    <h2>Lock screen</h2>
+    <p class="muted">
+      <% if @user.auto_lock? %>Locks automatically after <strong><%= User::AUTO_LOCK_OPTIONS.key(@user.auto_lock_minutes) %></strong> of inactivity.<% else %>Auto-lock is <strong>off</strong>.<% end %>
+      Lock by hand with the 🔒 button or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>.
+    </p>
+  </div>
+  <%= link_to "Change lock settings", edit_lock_settings_path, class: "btn btn-secondary" %>
+</section>

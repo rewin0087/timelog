@@ -20,9 +20,25 @@ Prerequisites: Ruby 3.4.9 and a running PostgreSQL server (the dev database is `
 
 Or run `bin/setup` to install gems, prepare the database, and start the server in one step.
 
-Open the app, go to **Sign up** (`/signup`), and create an account. Everything after that requires being signed in.
+Open the app, go to **Sign up** (`/signup`), and create an account. You'll then be asked to choose a lock code (see [Lock screen](#lock-screen-lock)). Everything after that requires being signed in and unlocked.
 
 ## Features
+
+### Layout, skins, and mobile
+
+- Navigation lives in a left sidebar. Page changes animate with the View Transitions API: the new page slides in from the window edge (from the right going forward, from the left going back).
+- **Skins:** 13 colour themes, picked from the swatches in the sidebar: Violet (default), Ocean, Sunset, Forest, Candy, Midnight, Rainbow, Lemonade, Ruby, Slate, Mocha, Neon, and Aurora. Midnight, Neon, and Aurora are dark. The choice is saved in the Rails session, so it resets to Violet after signing out. Skins are listed in `app/models/theme.rb` and defined as CSS custom properties in `app/assets/stylesheets/application.css`.
+- **Mobile:** at 860px and below, the sidebar becomes a top bar with a bottom tab bar, and skins and sign out move to the avatar menu. At 640px and below, tables become stacked cards and forms go single-column. On phones, PDF previews open in a new tab rather than a modal.
+
+### Lock screen (`/lock`)
+
+Protects a signed-in session from anyone else at the same device.
+
+- **Setup:** users without a lock code are sent to `/lock_settings/edit` and can't use the app until they set one. Codes are 4–8 digits, and trivial ones (`0000`, `1234`, `9876`, …) are rejected. The code is stored as a bcrypt digest (`users.lock_pin_digest`).
+- **Locking:** use the 🔒 button in the sidebar or **Ctrl+Shift+L**, or let the app lock itself after the auto-lock period: 1, 5 (default), 15, or 30 minutes, 1 hour, or never. Locking or unlocking in one tab applies to the user's other open tabs.
+- **Enforced on the server:** lock state and last activity live on the `sessions` row. While locked, every page, PDF export, and API call is redirected to the lock screen (or answered `423 Locked`). An idle session is locked on its next request even if the browser's timer never fired. Signed-in pages are sent with `Cache-Control: no-store` and the Turbo cache is cleared on lock, so Back can't reveal them.
+- **Unlocking:** enter the code on the keypad or keyboard. After 5 wrong codes the session is signed out. A forgotten code can be reset in the lock settings with the account password after signing back in.
+- **Changing settings:** the Lock screen card on the profile page links to the settings. Any change needs the current code or the account password.
 
 ### Dashboard (`/`)
 
@@ -79,6 +95,14 @@ Hours are **not** entered by hand. The app assumes a fixed **160 hours per month
 | `app/services/timelog_pdf.rb` | Timelog PDF layout |
 | `app/services/invoice_pdf.rb` | Invoice PDF layout |
 | `app/controllers/concerns/authentication.rb` | Session handling |
+| `app/controllers/concerns/screen_lock.rb` | Gates every request behind lock-code setup and the lock screen |
+| `app/models/session.rb` | Lock state, server-side auto-lock, failed-attempt limit |
+| `app/controllers/locks_controller.rb` | Lock screen, lock, unlock, and activity heartbeat |
+| `app/controllers/lock_settings_controller.rb` | Set up or change the lock code and auto-lock period |
+| `app/models/theme.rb` | Available skins and the default |
+| `app/javascript/controllers/idle_lock_controller.js` | Idle timer, Ctrl+Shift+L, cross-tab lock |
+| `app/javascript/controllers/lock_pad_controller.js` | Lock screen keypad and clock |
+| `app/javascript/controllers/theme_controller.js` | Instant skin switching |
 
 ## Development
 

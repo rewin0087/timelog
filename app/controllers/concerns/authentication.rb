@@ -48,5 +48,6 @@ module Authentication
     def terminate_session
       Current.session.destroy
       cookies.delete(:session_id)
+      session.delete(:theme) # next sign-in starts on the default skin
     end
 end

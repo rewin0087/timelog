@@ -1,0 +1,37 @@
+<% content_for :own_flash, "1" %>
+<section class="lock-screen" data-controller="lock-pad">
+  <div class="lock-clock" aria-hidden="true">
+    <time data-lock-pad-target="time"></time>
+    <span data-lock-pad-target="date"></span>
+  </div>
+
+  <div class="lock-card <%= "shake" if flash[:alert] %>">
+    <div class="lock-who">
+      <span class="avatar avatar-lg"><%= Current.user.name.to_s.split.map(&:first).first(2).join.upcase %></span>
+      <strong><%= Current.user.name %></strong>
+      <span class="muted lock-status"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg> Screen locked</span>
+    </div>
+
+    <%= form_with url: lock_path, method: :delete, class: "lock-form", data: { lock_pad_target: "form", action: "turbo:submit-end->lock-pad#submitted" } do %>
+      <label class="sr-only" for="pin">Lock code</label>
+      <div class="pin-dots" data-lock-pad-target="dots" aria-hidden="true"></div>
+      <input type="password" id="pin" name="pin" class="pin-input" inputmode="numeric" pattern="[0-9]*" maxlength="8" required
+             autocomplete="off" autofocus data-lock-pad-target="input" data-action="input->lock-pad#sync keydown.enter->lock-pad#enter">
+
+      <% if flash[:alert] %><p class="lock-error" role="alert"><%= flash[:alert] %></p><% end %>
+
+      <div class="keypad">
+        <% (1..9).each do |d| %>
+          <button type="button" class="key" data-action="lock-pad#press" data-lock-pad-digit-param="<%= d %>"><%= d %></button>
+        <% end %>
+        <button type="button" class="key key-fn" data-action="lock-pad#erase" aria-label="Delete">⌫</button>
+        <button type="button" class="key" data-action="lock-pad#press" data-lock-pad-digit-param="0">0</button>
+        <button type="submit" class="key key-go" aria-label="Unlock">→</button>
+      </div>
+    <% end %>
+
+    <div class="lock-foot muted">
+      Forgot your code? <%= button_to "Sign out", session_path, method: :delete, class: "link" %> and sign back in with your password.
+    </div>
+  </div>
+</section>

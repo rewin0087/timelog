@@ -10,6 +10,12 @@ export default class extends Controller {
     const inline = new URL(href, location.href)
     inline.searchParams.set("inline", "1")
 
+    // Phone browsers can't render a PDF inside an iframe, so hand it to the browser's own viewer
+    if (matchMedia("(max-width: 720px), (pointer: coarse) and (max-width: 1024px)").matches) {
+      window.open(inline, "_blank", "noopener")
+      return
+    }
+
     this.titleTarget.textContent = event.params.title || "PDF preview"
     this.downloadTarget.href = href
     this.frameTarget.src = inline

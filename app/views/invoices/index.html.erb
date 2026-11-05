@@ -26,17 +26,17 @@
   <% if @invoices.empty? %>
     <p class="muted empty"><span class="empty-icon">🧾</span>No invoices yet.</p>
   <% else %>
-    <table>
+    <table class="rtable">
       <thead><tr><th>No.</th><th>Period</th><th>Date</th><th>Due</th><th class="num">Hours</th><th class="num">Amount</th><th></th></tr></thead>
       <tbody>
         <% @invoices.each do |i| %>
           <tr>
-            <td><%= i.code %></td>
-            <td><%= i.period_label %><% unless i.full_month? %> <span class="muted">(custom)</span><% end %></td>
-            <td><%= i.invoice_date.strftime("%d %b %Y") %></td>
-            <td><%= i.due_date.strftime("%d %b %Y") %></td>
-            <td class="num"><%= number_with_precision(i.hours, precision: 2) %></td>
-            <td class="num"><%= i.currency %> <%= number_with_delimiter(number_with_precision(i.amount, precision: 2)) %></td>
+            <td class="cell-main"><%= i.code %></td>
+            <td data-label="Period"><%= i.period_label %><% unless i.full_month? %> <span class="muted">(custom)</span><% end %></td>
+            <td data-label="Date"><%= i.invoice_date.strftime("%d %b %Y") %></td>
+            <td data-label="Due"><%= i.due_date.strftime("%d %b %Y") %></td>
+            <td class="num" data-label="Hours"><%= number_with_precision(i.hours, precision: 2) %></td>
+            <td class="num" data-label="Amount"><%= i.currency %> <%= number_with_delimiter(number_with_precision(i.amount, precision: 2)) %></td>
             <td class="actions">
               <%= button_tag "Preview", type: "button", class: "link",
                     data: { action: "pdf-preview#open", pdf_preview_url_param: invoice_path(i), pdf_preview_title_param: "Invoice #{i.code}" } %>

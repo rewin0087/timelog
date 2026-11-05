@@ -2,7 +2,7 @@
 <html>
   <head>
     <title>Timelog</title>
-    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="view-transition" content="same-origin">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
@@ -12,28 +12,53 @@
     <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
-  <body data-controller="pdf-preview">
-    <header class="nav">
-      <%= link_to root_path, class: "brand" do %><span class="brand-mark">⏱</span> Timelog<% end %>
-      <% if authenticated? %>
+  <% unlocked = app_unlocked? %>
+  <body data-controller="pdf-preview<%= " idle-lock" if unlocked %>" data-theme="<%= current_theme %>" class="<%= "with-sidebar" if unlocked %>"
+        <% if unlocked %>data-idle-lock-minutes-value="<%= Current.user.auto_lock_minutes %>" data-idle-lock-lock-url-value="<%= lock_path %>"
+        data-idle-lock-heartbeat-url-value="<%= heartbeat_lock_path %>"<% end %>>
+    <% if unlocked %>
+      <% initials = Current.user.name.to_s.split.map(&:first).first(2).join.upcase %>
+      <aside class="sidebar" data-controller="menu" data-action="keydown.esc@window->menu#close click@window->menu#outside">
+        <%= link_to root_path, class: "brand" do %><span class="brand-mark">⏱</span> Timelog<% end %>
+        <button type="button" class="menu-toggle" aria-label="Account and skins" aria-expanded="false" aria-controls="sidebar-extras"
+                data-menu-target="button" data-action="menu#toggle"><span class="avatar"><%= initials %></span></button>
         <nav>
-          <% [["Dashboard", root_path, "dashboard"], ["Manage logs", time_entries_path, "time_entries"],
-              ["Export report", reports_path, "reports"], ["Invoices", invoices_path, "invoices"]].each do |label, path, ctrl| %>
-            <%= link_to label, path, class: ("active" if controller_name == ctrl) %>
+          <% [["Dashboard", root_path, "dashboard", "▦"], ["Manage logs", time_entries_path, "time_entries", "☰"],
+              ["Export report", reports_path, "reports", "⇪"], ["Invoices", invoices_path, "invoices", "❏"]].each do |label, path, ctrl, icon| %>
+            <%= link_to path, class: ("active" if controller_name == ctrl) do %><span class="nav-icon" aria-hidden="true"><%= icon %></span><span><%= label %></span><% end %>
           <% end %>
         </nav>
-        <span class="who">
-          <%= link_to edit_profile_path do %><span class="avatar"><%= Current.user.name.to_s.split.map(&:first).first(2).join.upcase %></span> <%= Current.user.name %><% end %>
-          <%= button_to "Sign out", session_path, method: :delete, class: "link" %>
-        </span>
-      <% end %>
-    </header>
+        <div class="sidebar-extras" id="sidebar-extras">
+          <div class="skins" data-controller="theme" data-action="submit->theme#choose">
+            <span class="skins-label">Skin</span>
+            <div class="skins-list">
+              <% Theme::ALL.each do |skin| %>
+                <%= button_to theme_path, method: :patch, params: { theme: skin.key },
+                      class: ["swatch", ("active" if skin.key == current_theme)], title: skin.name,
+                      style: "--swatch:#{skin.swatch}", aria: { label: "#{skin.name} skin", pressed: skin.key == current_theme },
+                      form: { data: { theme_key: skin.key } } do %><span class="sr-only"><%= skin.name %></span><% end %>
+              <% end %>
+            </div>
+          </div>
+          <div class="who">
+            <%= link_to edit_profile_path, class: "who-profile" do %><span class="avatar"><%= initials %></span> <span class="who-name"><%= Current.user.name %></span><% end %>
+            <div class="who-actions">
+            <%= button_to lock_path, class: "lock-btn", title: "Lock screen (Ctrl+Shift+L)", aria: { label: "Lock screen" },
+                  form: { data: { action: "idle-lock#lock:prevent" } } do %><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg><% end %>
+            <%= button_to "Sign out", session_path, method: :delete, class: "link" %>
+          </div>
+          </div>
+        </div>
+      </aside>
+    <% end %>
     <main>
-      <% if notice %><p class="flash notice"><%= notice %></p><% end %>
-      <% if alert %><p class="flash alert"><%= alert %></p><% end %>
+      <% unless content_for?(:own_flash) %>
+        <% if notice %><p class="flash notice"><%= notice %></p><% end %>
+        <% if alert %><p class="flash alert"><%= alert %></p><% end %>
+      <% end %>
       <%= yield %>
     </main>
-    <% if authenticated? %>
+    <% if unlocked %>
       <dialog class="pdf-modal" data-pdf-preview-target="dialog" data-action="click->pdf-preview#backdrop close->pdf-preview#closed">
         <div class="pdf-modal-head">
           <strong data-pdf-preview-target="title">PDF preview</strong>

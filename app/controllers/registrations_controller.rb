@@ -1,5 +1,6 @@
 class RegistrationsController < ApplicationController
   allow_unauthenticated_access
+  skip_screen_lock
   before_action -> { redirect_to root_path if authenticated? }
 
   def new
