@@ -268,6 +268,59 @@ button.danger { color:var(--danger); }
 .pdf-modal-actions { display:flex; gap:12px; }
 .pdf-modal iframe { flex:1; width:100%; border:0; background:#f1f0f7; }
 
+/* ---------- Daily inspiration (verse + trivia) ---------- */
+.inspiration-frame { display:block; }
+.inspiration { display:grid; grid-template-columns:minmax(0, 1fr) minmax(0, 1.25fr); gap:16px; margin-bottom:24px; align-items:stretch; }
+.inspiration > .card { margin:0; }
+.insp-label { display:flex; align-items:center; gap:6px; font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); margin-bottom:12px; }
+
+.verse-card { position:relative; overflow:hidden; display:flex; flex-direction:column; background:linear-gradient(160deg, var(--accent-soft), var(--surface) 70%); }
+.verse-card::before { content:"\201C"; position:absolute; right:14px; top:-18px; font-size:120px; font-weight:800; line-height:1; color:var(--accent); opacity:.1; pointer-events:none; }
+.verse-card blockquote { margin:0; font-size:18px; font-weight:600; line-height:1.5; letter-spacing:-.01em; text-wrap:pretty; }
+.verse-card figcaption { margin-top:10px; font-weight:700; color:var(--accent); font-size:14px; }
+.verse-card figcaption .muted { font-weight:500; font-size:12px; }
+.verse-reflection { margin:auto 0 0; padding-top:14px; color:var(--muted); font-size:14px; line-height:1.5; }
+
+.trivia-head { justify-content:space-between; }
+.trivia-cat { color:var(--muted); font-weight:600; text-transform:none; letter-spacing:0; }
+.trivia-progress { color:var(--muted); font-variant-numeric:tabular-nums; }
+.trivia-q { margin:0 0 14px; font-size:16px; font-weight:600; line-height:1.45; }
+.trivia-choices { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.trivia-choice {
+  display:flex; align-items:center; gap:10px; width:100%; padding:10px 12px; text-align:left; font:inherit; font-size:14px; color:var(--fg);
+  background:var(--field-bg); border:1px solid var(--field-line); border-radius:12px; cursor:pointer;
+  transition:border-color .15s, background .15s, transform .15s;
+}
+.trivia-choice b { display:grid; place-items:center; flex:none; width:24px; height:24px; border-radius:8px; font-size:12px; background:var(--accent-soft); color:var(--accent); }
+.trivia-choice:hover:not(:disabled) { border-color:var(--accent); transform:translateY(-1px); }
+.trivia-choice:disabled { cursor:default; opacity:.6; }
+.trivia-choice.correct { opacity:1; border-color:#16a34a; background:color-mix(in srgb, #16a34a 12%, var(--field-bg)); }
+.trivia-choice.correct b { background:#16a34a; color:#fff; }
+.trivia-choice.wrong { opacity:1; border-color:var(--danger); background:color-mix(in srgb, var(--danger) 10%, var(--field-bg)); }
+.trivia-choice.wrong b { background:var(--danger); color:#fff; }
+.trivia-feedback { margin:12px 0 0; font-size:14px; line-height:1.5; padding:10px 12px; border-radius:12px; background:var(--accent-soft); }
+.trivia-feedback.is-correct { background:color-mix(in srgb, #16a34a 12%, transparent); }
+.trivia-feedback.is-wrong { background:color-mix(in srgb, var(--danger) 10%, transparent); }
+.trivia-foot { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; margin-top:14px; min-height:40px; font-size:13px; font-weight:600; }
+
+@keyframes shimmer { to { background-position:-200% 0; } }
+.insp-skeleton i { display:block; height:12px; margin-top:10px; border-radius:6px; background:linear-gradient(90deg, var(--line) 25%, var(--accent-soft) 50%, var(--line) 75%); background-size:200% 100%; animation:shimmer 1.4s linear infinite; }
+.insp-skeleton i.short { width:55%; }
+
+/* Lock screen version: translucent, under the keypad */
+.lock-screen .inspiration-frame { width:min(820px, 100%); }
+.inspiration-compact { margin:0; }
+.inspiration-compact > .card { background:color-mix(in srgb, var(--surface) 82%, transparent); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px); border-radius:22px; text-align:left; }
+.inspiration-compact .verse-card blockquote { font-size:16px; }
+
+@media (max-width: 860px) {
+  .inspiration { grid-template-columns:1fr; }
+}
+@media (max-width: 640px) {
+  .trivia-choices { grid-template-columns:1fr; }
+  .trivia-foot .btn { width:100%; text-align:center; }
+}
+
 /* ---------- Lock screen ---------- */
 .lock-btn svg, .lock-status svg, .lock-badge svg { fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
 .who-actions { display:flex; align-items:center; gap:10px; flex:none; }

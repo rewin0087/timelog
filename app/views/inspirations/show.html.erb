@@ -1,0 +1,25 @@
+<turbo-frame id="inspiration">
+  <div class="inspiration <%= "inspiration-compact" if @compact %>">
+    <figure class="card verse-card">
+      <div class="insp-label"><span aria-hidden="true">✦</span> Verse of the day</div>
+      <blockquote><%= @inspiration.verse_text %></blockquote>
+      <figcaption>— <%= @inspiration.verse_reference %> <span class="muted">(WEB)</span></figcaption>
+      <% if @inspiration.verse_reflection.present? %><p class="verse-reflection"><%= @inspiration.verse_reflection %></p><% end %>
+    </figure>
+
+    <section class="card trivia-card" data-controller="trivia"
+             data-trivia-questions-value="<%= @inspiration.questions.to_json %>" data-trivia-day-value="<%= @inspiration.day.iso8601 %>">
+      <div class="insp-label trivia-head">
+        <span><span aria-hidden="true">?</span> Daily trivia <span class="trivia-cat" data-trivia-target="category"></span></span>
+        <span class="trivia-progress" data-trivia-target="progress"></span>
+      </div>
+      <p class="trivia-q" data-trivia-target="question" aria-live="polite"></p>
+      <div class="trivia-choices" data-trivia-target="choices"></div>
+      <p class="trivia-feedback" data-trivia-target="feedback" aria-live="polite" hidden></p>
+      <div class="trivia-foot">
+        <span class="muted" data-trivia-target="score"></span>
+        <button type="button" class="btn btn-secondary trivia-next" data-trivia-target="next" data-action="trivia#next" hidden>Next question →</button>
+      </div>
+    </section>
+  </div>
+</turbo-frame>

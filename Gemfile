@@ -47,3 +47,6 @@ gem "prawn", "~> 2.4"
 gem "prawn-table", "~> 0.2.2"
 
 gem "matrix", "~> 0.4.3"
+
+# Loads FUELIX_* settings from .env in development/test
+gem "dotenv-rails", "~> 3.2", groups: %i[development test]

@@ -7,6 +7,8 @@
   <p class="muted">Hours are set automatically: <%= Invoice::MONTHLY_HOURS %>h ÷ <%= TimeEntry.weekdays_in_month(Date.current) %> weekdays = <strong><%= number_with_precision(TimeEntry.daily_hours_for(Date.current.beginning_of_month.next_weekday), precision: 2) %>h per day</strong> this month. Todos added on the same day share that day's hours.</p>
 </section>
 
+<%= render "inspirations/frame" %>
+
 <div class="stats">
   <div class="stat"><div class="stat-label">Hours <%= @view == "month" ? "this month" : "this week" %></div><div class="stat-value"><%= number_with_precision(@total_hours, precision: 2) %>h</div></div>
   <div class="stat"><div class="stat-label">Todos logged</div><div class="stat-value"><%= @entries.size %></div></div>

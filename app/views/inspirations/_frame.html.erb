@@ -1,0 +1,7 @@
+<%# Placeholder that lazy-loads today's verse and trivia %>
+<turbo-frame id="inspiration" src="<%= inspiration_path(compact: (1 if local_assigns[:compact])) %>" loading="lazy" class="inspiration-frame">
+  <div class="inspiration <%= "inspiration-compact" if local_assigns[:compact] %>" aria-busy="true">
+    <div class="card insp-skeleton"><div class="insp-label">✦ Verse of the day</div><i></i><i></i><i class="short"></i></div>
+    <div class="card insp-skeleton"><div class="insp-label">? Daily trivia</div><i></i><i class="short"></i><i></i></div>
+  </div>
+</turbo-frame>

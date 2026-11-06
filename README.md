@@ -46,6 +46,16 @@ Protects a signed-in session from anyone else at the same device.
 - Shows the current week by default. Add `?view=month` (optionally `&month=YYYY-MM`) for a monthly view with previous/next navigation.
 - Entries are grouped by day with a total hours figure.
 
+### Verse of the day and daily trivia
+
+The dashboard and the lock screen show a Bible verse (World English Bible) with a short reflection, plus 5 multiple-choice trivia questions about random facts.
+
+- Generated once a day with the FuelIX API (`app/services/fuelix_client.rb`) and stored in `daily_inspirations`, shared by all users. Verses from the last 30 days and recent questions are passed to the AI so they aren't repeated.
+- Loaded lazily in a Turbo Frame from `/inspiration`, so a slow AI call never holds up the page. It is served while the screen is locked, because it contains no personal data.
+- Trivia progress and score are kept in the browser (localStorage) per day, so the dashboard and lock screen continue the same round.
+- If FuelIX isn't configured or fails, a built-in set is shown and the AI is tried again after 30 minutes.
+- Settings: `FUELIX_API_KEY`, `FUELIX_API_URL` (default `https://api.fuelix.ai`), and `FUELIX_MODEL` (default `claude-sonnet-4-6`), read from `.env` in development (see `.env.example`). `.env` is git-ignored.
+
 ### Manage logs (`/time_entries`)
 
 Create, edit, or delete entries on any date. Shows the 200 most recent entries.
