@@ -1,8 +1,11 @@
 import { Controller } from "@hotwired/stimulus"
 
-// Lock screen: live clock, PIN dots, on-screen keypad. Also tells other tabs when the session unlocks.
+// Lock screen: live clock, PIN dots, on-screen keypad, or a plain "type the code" field (remembered per browser).
+// Also tells other tabs when the session unlocks.
+const MODE_KEY = "timelog-lock-mode"
+
 export default class extends Controller {
-  static targets = ["input", "dots", "form", "time", "date"]
+  static targets = ["input", "dots", "form", "time", "date", "modeToggle"]
 
   connect() {
     // Drop page snapshots so Back can't show what was on screen before the lock
@@ -10,6 +13,7 @@ export default class extends Controller {
     this.tick()
     this.clock = setInterval(() => this.tick(), 1000)
     this.sync()
+    this.#applyMode(this.#storedMode() === "type")
     this.channel = "BroadcastChannel" in window ? new BroadcastChannel("timelog-lock") : null
     if (this.channel) this.channel.onmessage = ({ data }) => { if (data === "unlocked") window.Turbo?.visit("/") }
   }
@@ -29,6 +33,13 @@ export default class extends Controller {
   erase() {
     this.inputTarget.value = this.inputTarget.value.slice(0, -1)
     this.sync()
+  }
+
+  toggleMode() {
+    const typing = !this.formTarget.classList.contains("typing")
+    try { localStorage.setItem(MODE_KEY, typing ? "type" : "pad") } catch {}
+    this.#applyMode(typing)
+    this.inputTarget.focus()
   }
 
   enter(event) {
@@ -52,6 +63,16 @@ export default class extends Controller {
     const now = new Date()
     this.timeTarget.textContent = now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
     this.dateTarget.textContent = now.toLocaleDateString([], { weekday: "long", day: "numeric", month: "long" })
+  }
+
+  #applyMode(typing) {
+    this.formTarget.classList.toggle("typing", typing)
+    this.inputTarget.placeholder = typing ? "Enter lock code" : ""
+    this.modeToggleTarget.textContent = typing ? "Use keypad instead" : "Type code instead"
+  }
+
+  #storedMode() {
+    try { return localStorage.getItem(MODE_KEY) } catch { return null }
   }
 
   #bump() {

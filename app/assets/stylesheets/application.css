@@ -257,6 +257,19 @@ button.link { background:none; border:0; padding:0; font:inherit; color:var(--ac
 button.danger { color:var(--danger); }
 .who button.link { color:var(--muted); font-size:13px; } .who button.link:hover { color:var(--fg); }
 
+/* Masked values (invoice amounts) */
+.masked { display:inline-flex; align-items:center; gap:8px; }
+.masked .masked-value, .masked.revealed .masked-dots { display:none; }
+.masked.revealed .masked-value { display:inline; }
+.masked-dots { color:var(--muted); letter-spacing:.08em; }
+.reveal-btn { display:inline-grid; place-items:center; width:26px; height:26px; padding:0; border:0; border-radius:8px; background:none; color:var(--muted); cursor:pointer; vertical-align:middle; transition:color .15s, background .15s; }
+.reveal-btn:hover { color:var(--accent); background:var(--accent-soft); }
+.reveal-btn:focus-visible { outline:none; box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 45%, transparent); }
+.reveal-btn svg { width:16px; height:16px; fill:none; stroke:currentColor; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+.reveal-btn .eye-shut, .reveal-btn.revealed .eye-open, .revealed > .reveal-btn .eye-open { display:none; }
+.reveal-btn.revealed .eye-shut, .revealed > .reveal-btn .eye-shut { display:block; }
+th .reveal-btn { width:22px; height:22px; margin-left:2px; }
+
 /* PDF preview modal */
 @keyframes modal-in { from { opacity:0; transform:translateY(16px) scale(.97); } }
 @keyframes backdrop-in { from { opacity:0; } }
@@ -365,6 +378,16 @@ button.danger { color:var(--danger); }
 .pin-dots i.on { background:var(--grad); border-color:transparent; }
 /* The real input sits invisibly over the dots: physical keyboards type into it, tapping it opens the phone's number pad */
 .pin-input { position:absolute; top:-6px; left:50%; translate:-50% 0; width:220px; height:30px; opacity:0; padding:0; border:0; font-size:16px; }
+.pin-submit { display:none; }
+.pin-mode { display:block; margin:16px auto 0; font-size:13px; }
+/* Typing mode: show the real input as a normal field, hide the dots and keypad */
+.lock-form.typing .pin-dots, .lock-form.typing .keypad { display:none; }
+.lock-form.typing .pin-input {
+  position:static; translate:none; display:block; width:100%; height:auto; opacity:1; padding:12px 14px;
+  border:1px solid var(--field-line); text-align:center; font-size:20px; letter-spacing:.3em;
+}
+.lock-form.typing .pin-input::placeholder { font-size:15px; letter-spacing:normal; }
+.lock-form.typing .pin-submit { display:block; width:100%; margin-top:14px; }
 .lock-error { margin:12px 0 0; color:var(--danger); font-size:13px; font-weight:600; }
 .keypad { display:grid; grid-template-columns:repeat(3, 64px); justify-content:center; gap:14px 22px; margin-top:22px; }
 .key {
