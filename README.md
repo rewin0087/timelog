@@ -135,9 +135,25 @@ In both modes a day's hours are split equally between that day's entries, and ad
     bin/rubocop                # style
     bin/brakeman               # security static analysis
     bin/bundler-audit          # gem vulnerability audit
-    bin/ci                     # runs setup and all of the checks above
+    bundle exec rspec          # full test suite
+    bin/ci                     # runs setup, the checks above, and the tests
 
-There is no automated test suite yet.
+## Tests
+
+RSpec, with FactoryBot, Capybara + [Cuprite](https://github.com/rubycdp/cuprite) (headless Chrome, which must be installed), WebMock, and pdf-inspector.
+
+| Path | Covers |
+| --- | --- |
+| `spec/models` | Validations, lock codes, sessions and auto-lock, hour balancing, invoice generation, daily inspiration and its fallback |
+| `spec/services` | Report periods, timelog and invoice PDF contents, FuelIX client, chart statistics |
+| `spec/helpers` | Chart helpers (ticks, percentages, hour/money formatting, masking) |
+| `spec/requests` | Every endpoint: sign in/up/out, screen lock and lock settings, profile, skins, dashboard, logs, reports, invoices, other users' data |
+| `spec/system` | Browser flows: onboarding, quick add, logs CRUD, report period fields and PDF preview, invoice masking, lock screen keypad and shortcut, skins, trivia, mobile layout |
+
+- Every example runs at a fixed time (Friday 13 November 2026, 10:00). Tag an example with `at: Time.zone.local(...)` to change it.
+- Tests never call FuelIX: `FUELIX_API_KEY` is cleared and outside network access is blocked; stub it with the helpers in `spec/support/fuelix_helpers.rb`.
+- Browser tests are tagged `:js` (desktop window) or `:mobile` (390×844). Run with `HEADFUL=1` to watch them. Failure screenshots land in `tmp/capybara/`.
+- Not covered: the rate limits on sign-in, unlock, and lock settings (the test cache store is a null store, so they never trigger), the idle timer firing after minutes of real inactivity, and cross-tab lock/unlock messages.
 
 ## Deployment
 

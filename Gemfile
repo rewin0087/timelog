@@ -50,3 +50,15 @@ gem "matrix", "~> 0.4.3"
 
 # Loads FUELIX_* settings from .env in development/test
 gem "dotenv-rails", "~> 3.2", groups: %i[development test]
+
+group :development, :test do
+  gem "rspec-rails", "~> 8.0"
+  gem "factory_bot_rails"
+end
+
+group :test do
+  gem "capybara"
+  gem "cuprite"
+  gem "webmock"
+  gem "pdf-inspector", require: "pdf/inspector"
+end
