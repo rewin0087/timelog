@@ -61,9 +61,9 @@ The dashboard and the lock screen show a Bible verse (World English Bible) with 
 
 ### Manage logs (`/time_entries`)
 
-Create, edit, or delete entries on any date. Shows the 200 most recent entries.
+Create, edit, or delete entries on any date. Shows the 200 most recent entries, with page links (`?page=N`) to older ones.
 
-Above the list: this month's and all-time hours, activities, days logged, and activities per day, hours and activities per month for the last 12 months, an 18-week activity heatmap, activities by weekday, and the most logged tasks.
+Above the list (first page only): this month's and all-time hours, activities, days logged, and activities per day, hours and activities per month for the last 12 months, an 18-week activity heatmap, activities by weekday, and the most logged tasks.
 
 ### Timelog export (`/reports`)
 

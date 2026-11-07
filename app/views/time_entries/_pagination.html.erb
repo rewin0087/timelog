@@ -1,0 +1,20 @@
+<% first = (@page - 1) * TimeEntriesController::PER_PAGE + 1 %>
+<% last = first + @entries.size - 1 %>
+<nav class="pagination" aria-label="Timelog pages">
+  <p class="muted">Showing <%= number_with_delimiter(first) %>–<%= number_with_delimiter(last) %> of <%= number_with_delimiter(@total) %> entries<%= ", newest first" if @pages > 1 %>.</p>
+  <% if @pages > 1 %>
+    <div class="pager-links">
+      <% if @page > 1 %><%= link_to "← Newer", time_entries_path(page: (@page - 1 if @page > 2)), rel: "prev" %><% else %><span class="disabled" aria-disabled="true">← Newer</span><% end %>
+      <% window = ([ 1, @pages ] + ((@page - 2)..(@page + 2)).to_a).select { |n| n.between?(1, @pages) }.uniq.sort %>
+      <% window.each_with_index do |n, i| %>
+        <% if i.positive? && n - window[i - 1] > 1 %><span class="gap" aria-hidden="true">…</span><% end %>
+        <% if n == @page %>
+          <span class="current" aria-current="page"><%= n %></span>
+        <% else %>
+          <%= link_to n, time_entries_path(page: (n if n > 1)), aria: { label: "Page #{n}" } %>
+        <% end %>
+      <% end %>
+      <% if @page < @pages %><%= link_to "Older →", time_entries_path(page: @page + 1), rel: "next" %><% else %><span class="disabled" aria-disabled="true">Older →</span><% end %>
+    </div>
+  <% end %>
+</nav>

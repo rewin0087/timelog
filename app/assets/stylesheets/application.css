@@ -433,6 +433,16 @@ kbd { padding:1px 6px; border:1px solid var(--line); border-bottom-width:2px; bo
 .auth h2 { font-size:24px; }
 
 
+/* Manage logs pagination */
+.pagination { display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-top:16px; }
+.pagination p { margin:0; }
+.pager-links { display:flex; flex-wrap:wrap; align-items:center; gap:4px; }
+.pager-links > * { min-width:36px; padding:6px 10px; border-radius:9px; text-align:center; font-weight:600; font-size:14px; text-decoration:none; }
+.pager-links a:hover { background:var(--accent-soft); }
+.pager-links .current { background:var(--grad); color:var(--on-accent); }
+.pager-links .disabled { color:var(--muted); opacity:.5; }
+.pager-links .gap { min-width:0; padding:6px 2px; color:var(--muted); }
+
 /* Profile: working hours */
 .hours-settings { grid-column:1 / -1; display:grid; gap:12px; margin:0; padding:0; border:0; min-width:0; }
 .hours-settings .choice { flex-direction:row; align-items:flex-start; gap:12px; padding:14px 16px; border:1px solid var(--field-line); border-radius:12px; cursor:pointer; font-weight:500; }

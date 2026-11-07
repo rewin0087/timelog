@@ -1,8 +1,15 @@
 class TimeEntriesController < ApplicationController
+  PER_PAGE = 200
   before_action :set_entry, only: %i[edit update destroy]
 
   def index
-    @entries = Current.user.time_entries.order(log_date: :desc, created_at: :desc).limit(200)
+    scope = Current.user.time_entries.order(log_date: :desc, created_at: :desc, id: :desc)
+    @total = scope.count
+    @pages = [ (@total / PER_PAGE.to_f).ceil, 1 ].max
+    @page = params[:page].to_i.clamp(1, @pages)
+    @entries = scope.offset((@page - 1) * PER_PAGE).limit(PER_PAGE)
+    return unless @page == 1 # charts and stats only on the first page
+
     stats = TimeStats.new(Current.user)
     @months = stats.months(Date.current.prev_month(11), Date.current)
     @activity = stats.activity(18)

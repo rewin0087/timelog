@@ -1,8 +1,8 @@
-<%= render "charts" %>
+<%= render "charts" if @page == 1 %>
 
 <section class="card">
   <div class="toolbar">
-    <h2>Manage timelogs</h2>
+    <h2>Manage timelogs<% if @pages > 1 %> <small>page <%= @page %> of <%= @pages %></small><% end %></h2>
     <%= link_to "+ New timelog", new_time_entry_path, class: "btn" %>
   </div>
   <% if @entries.empty? %>
@@ -25,6 +25,6 @@
         <% end %>
       </tbody>
     </table>
-    <p class="muted">Showing the 200 most recent entries.</p>
+    <%= render "pagination" %>
   <% end %>
 </section>
