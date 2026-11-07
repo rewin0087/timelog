@@ -45,6 +45,9 @@ Protects a signed-in session from anyone else at the same device.
 - Quick-add a todo for **today**. The date is filled in for you.
 - Shows the current week by default. Add `?view=month` (optionally `&month=YYYY-MM`) for a monthly view with previous/next navigation.
 - Entries are grouped by day with a total hours figure.
+- **This month's progress:** hours logged vs the 160h target, hours left to log, activities logged, missed weekdays, a meter with an "expected by today" marker, and a per-day hours chart (logged, holiday, missed, still to log).
+- **Last 3 months:** hours logged per month against 160h, with each month's weekday count, logged weekdays, and whether it reached 160h.
+- **Holidays:** days logged as public holidays, non-working holidays, or other holidays, for this month and the last 3. There is no holiday field: a day counts when one of its todos mentions "public/regular/national holiday", "non-working", or "holiday" (checked in that order, see `TimeStats::HOLIDAY_KINDS`).
 
 ### Verse of the day and daily trivia
 
@@ -59,6 +62,8 @@ The dashboard and the lock screen show a Bible verse (World English Bible) with 
 ### Manage logs (`/time_entries`)
 
 Create, edit, or delete entries on any date. Shows the 200 most recent entries.
+
+Above the list: this month's and all-time hours, activities, days logged, and activities per day, hours and activities per month for the last 12 months, an 18-week activity heatmap, activities by weekday, and the most logged tasks.
 
 ### Timelog export (`/reports`)
 
@@ -76,6 +81,7 @@ Preview and download a PDF timelog (COUNT / DATE / TASK DONE / HOURS WORKED / NO
 
 ### Invoices (`/invoices`)
 
+- Charts at the top: invoice count, hours billed, amount billed this year and per month (masked until you press an eye button), billed vs logged hours per month, and a 12-month invoice timeline with the next due date. The amount chart has no value axis, so amounts stay hidden.
 - Generate an invoice for a whole month (the last 12 months are listed; the default is the latest finished month), or for a custom date range within one month with its own due date.
 - The custom range is prefilled with the first day of the current month that hasn't been invoiced yet, so a partial invoice is easy to follow up.
 - Invoices are numbered per user (`INV-001`, `INV-002`, …). Regenerating the same period refreshes the existing invoice instead of creating a new one. Overlapping periods are rejected.
@@ -101,6 +107,8 @@ Hours are **not** entered by hand. The app assumes a fixed **160 hours per month
 | `app/models/time_entry.rb` | Entries and the daily hour-splitting logic |
 | `app/models/invoice.rb` | Invoice generation, numbering, and validations |
 | `app/models/user.rb` | Account, profile, and invoice due-date rules |
+| `app/services/time_stats.rb` | Monthly, holiday, activity, and invoice statistics for the charts |
+| `app/views/charts/` | Reusable column chart and meter partials (HTML/CSS, follow the skin) |
 | `app/services/report_range.rb` | Turns report params into a date range and label |
 | `app/services/timelog_pdf.rb` | Timelog PDF layout |
 | `app/services/invoice_pdf.rb` | Invoice PDF layout |

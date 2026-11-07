@@ -1,0 +1,13 @@
+<%# Progress meter: value of total, with an optional "expected by now" marker. %>
+<% marker ||= nil; marker_label ||= nil %>
+<div class="meter" role="meter" aria-valuemin="0" aria-valuemax="<%= total.to_f.round(2) %>" aria-valuenow="<%= value.to_f.round(2) %>" aria-label="<%= label %>">
+  <div class="meter-track">
+    <span class="meter-fill" style="width:<%= chart_pct(value, total) %>"></span>
+    <% if marker %><span class="meter-marker" style="left:<%= chart_pct(marker, total) %>" title="<%= marker_label %>"></span><% end %>
+  </div>
+  <div class="meter-scale">
+    <span>0h</span>
+    <% if marker %><span class="meter-marker-label" style="left:<%= chart_pct(marker, total) %>"><%= marker_label %></span><% end %>
+    <span><%= fmt_hours(total) %></span>
+  </div>
+</div>

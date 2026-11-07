@@ -18,5 +18,13 @@ class DashboardController < ApplicationController
     @total_hours = @entries.sum(:hours)
     @by_day = @entries.group_by(&:log_date)
     @new_entry = Current.user.time_entries.new(log_date: today)
+
+    stats = TimeStats.new(Current.user, today: today)
+    @month_stats = stats.current_month
+    @month_days = stats.current_month_days
+    @expected_hours = stats.expected_to_date
+    @weekdays_left = stats.weekdays_left
+    @missed_days = stats.missed_weekdays
+    @recent_months = stats.previous_months(3)
   end
 end

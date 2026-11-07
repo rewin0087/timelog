@@ -1,7 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
 // Masks sensitive values (e.g. invoice amounts) until the eye button is pressed.
-// Each [data-reveal-target="item"] toggles on its own; toggleAll flips every item at once.
+// Each [data-reveal-target="item"] toggles on its own; toggleAll (any "all" button) flips every item at once.
 export default class extends Controller {
   static targets = ["item", "all"]
 
@@ -38,10 +38,11 @@ export default class extends Controller {
   }
 
   #syncAll() {
-    if (!this.hasAllTarget) return
     const shown = this.itemTargets.length > 0 && this.itemTargets.every((item) => item.classList.contains("revealed"))
-    this.allTarget.classList.toggle("revealed", shown)
-    this.allTarget.setAttribute("aria-pressed", shown)
-    this.allTarget.setAttribute("aria-label", shown ? "Hide all amounts" : "Show all amounts")
+    this.allTargets.forEach((button) => {
+      button.classList.toggle("revealed", shown)
+      button.setAttribute("aria-pressed", shown)
+      button.setAttribute("aria-label", shown ? "Hide all amounts" : "Show all amounts")
+    })
   }
 }

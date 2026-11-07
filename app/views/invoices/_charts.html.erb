@@ -1,0 +1,59 @@
+<% currency = @invoices.first.currency %>
+<% same = @invoices.select { |i| i.currency == currency } %>
+<% this_year = same.select { |i| i.invoice_date.year == Date.current.year } %>
+<% billed_months = same.map(&:period).uniq.size %>
+<% upcoming = @invoices.select { |i| i.due_date >= Date.current }.min_by(&:due_date) %>
+<div class="stats stats-4">
+  <div class="stat"><div class="stat-label">Invoices</div><div class="stat-value"><%= @invoices.size %></div></div>
+  <div class="stat"><div class="stat-label">Hours billed</div><div class="stat-value"><%= fmt_hours(@invoices.sum(&:hours), precision: 0) %></div></div>
+  <div class="stat"><div class="stat-label">Billed in <%= Date.current.year %> <%= render "reveal_all" %></div><div class="stat-money"><%= masked_money(currency, this_year.sum(&:amount)) %></div></div>
+  <div class="stat"><div class="stat-label">Average per month</div><div class="stat-money"><%= masked_money(currency, billed_months.positive? ? same.sum(&:amount) / billed_months : 0) %></div></div>
+</div>
+
+<div class="chart-grid-2">
+  <section class="card">
+    <h2>Billed vs logged hours <small>last 12 months</small></h2>
+    <% bars = @invoice_months.map do |m|
+         label = m[:month].strftime("%b %Y")
+         { label: m[:month].strftime("%b"), sub: (m[:month].year if m[:month].month == 1 || m == @invoice_months.first),
+           aria: "#{label}: #{fmt_hours(m[:billed_hours])} billed, #{fmt_hours(m[:logged_hours])} logged",
+           tip: safe_join([ tag.strong(label), "Billed #{fmt_hours(m[:billed_hours])}#{" (#{pluralize(m[:invoices], 'invoice')})" if m[:invoices] > 1}",
+                            "Logged #{fmt_hours(m[:logged_hours])}", (m[:invoices].zero? ? "Not invoiced" : nil) ].compact, tag.br),
+           series: [ { value: m[:billed_hours], tone: "accent" }, { value: m[:logged_hours], tone: "muted" } ] }
+       end %>
+    <%= render "charts/columns", bars: bars, target: Invoice::MONTHLY_HOURS, target_label: "#{fmt_hours(Invoice::MONTHLY_HOURS)} / month",
+               legend: [ [ "accent", "Billed" ], [ "muted", "Logged" ] ], title: "Billed and logged hours per month" %>
+  </section>
+
+  <section class="card">
+    <h2>Amount billed <small>per month, <%= currency %></small></h2>
+    <% bars = @invoice_months.map do |m|
+         label = m[:month].strftime("%b %Y")
+         amount = m[:currency] == currency ? m[:amount] : 0
+         { label: m[:month].strftime("%b"), sub: (m[:month].year if m[:month].month == 1 || m == @invoice_months.first),
+           aria: "#{label}: #{m[:invoices].zero? ? 'not invoiced' : pluralize(m[:invoices], 'invoice')}",
+           tip: safe_join([ tag.strong(label), (m[:invoices].zero? ? "Not invoiced" : masked_money(currency, amount)) ], tag.br),
+           series: [ { value: amount, tone: "accent" } ] }
+       end %>
+    <%= render "charts/columns", bars: bars, hide_ticks: true, title: "Amount billed per month" %>
+    <p class="muted chart-note">Amounts are hidden until you press the eye. Bars show each month relative to the others.</p>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Invoice timeline</h2>
+  <div class="kpis">
+    <div class="kpi"><span class="kpi-label">Latest invoice</span><span class="kpi-value"><%= @invoices.first.code %></span><span class="kpi-note"><%= @invoices.first.period_label %></span></div>
+    <div class="kpi"><span class="kpi-label">Next due date</span><span class="kpi-value"><%= upcoming ? upcoming.due_date.strftime("%-d %b") : "—" %></span><span class="kpi-note"><%= upcoming ? "#{upcoming.code} · in #{pluralize((upcoming.due_date - Date.current).to_i, 'day')}" : "nothing upcoming" %></span></div>
+    <div class="kpi"><span class="kpi-label">Months invoiced</span><span class="kpi-value"><%= @invoice_months.count { |m| m[:invoices].positive? } %>/12</span><span class="kpi-note">last 12 months</span></div>
+    <div class="kpi"><span class="kpi-label">Custom-range invoices</span><span class="kpi-value"><%= @invoices.count { |i| !i.full_month? } %></span><span class="kpi-note">partial months</span></div>
+  </div>
+  <div class="timeline" role="list">
+    <% @invoice_months.each do |m| %>
+      <% invoiced = m[:invoices].positive? %>
+      <span class="timeline-cell<%= " is-on" if invoiced %>" role="listitem" title="<%= m[:month].strftime('%B %Y') %>: <%= invoiced ? pluralize(m[:invoices], 'invoice') : 'not invoiced' %>">
+        <i></i><%= m[:month].strftime("%b") %>
+      </span>
+    <% end %>
+  </div>
+</section>

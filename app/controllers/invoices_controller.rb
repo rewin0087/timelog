@@ -6,6 +6,7 @@ class InvoicesController < ApplicationController
     @missing = Current.user.missing_invoice_fields
     @range_from, @range_to = suggested_range
     @range_due = Current.user.invoice_due_date_after(@range_to)
+    @invoice_months = TimeStats.new(Current.user).invoice_months(12)
   end
 
   def create

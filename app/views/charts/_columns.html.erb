@@ -1,0 +1,41 @@
+<%#
+  Column chart (one or more side-by-side series per column), drawn in HTML/CSS so it follows the skin.
+  bars:   [{ label:, sub: nil, aria:, tip: (html), cap: (html, optional), dim: false,
+             series: [{ value:, tone: "accent" | "soft" | "ghost" | "missed" | "s1" | "s2" | "s3" | "muted" }] }]
+  max:    top of the scale (defaults to the largest value/target); ticks are rounded up from it
+  target: optional value drawn as a dashed line, labelled target_label
+  legend: optional [[tone, label], ...]; dense: true for many narrow columns (e.g. days of a month)
+%>
+<% target ||= nil; target_label ||= nil; legend ||= nil; dense ||= false; tick_suffix ||= "h"; title ||= nil; hide_ticks ||= false %>
+<% top_value = [ local_assigns[:max].to_f, target.to_f, *bars.flat_map { |b| b[:series].map { |s| s[:value].to_f } } ].max %>
+<% ticks = chart_ticks(top_value) %>
+<% scale = ticks.last %>
+<figure class="chart<%= " chart-dense" if dense %><%= " chart-noticks" if hide_ticks %>" <% if title %>aria-label="<%= title %>"<% end %>>
+  <% if legend %>
+    <figcaption class="chart-legend">
+      <% legend.each do |tone, text| %><span><i class="legend-key tone-<%= tone %>"></i><%= text %></span><% end %>
+      <% if target && target_label %><span><i class="legend-key legend-key-target"></i><%= target_label %></span><% end %>
+    </figcaption>
+  <% end %>
+  <div class="chart-body">
+    <div class="chart-grid" aria-hidden="true">
+      <% ticks.each do |t| %><span style="bottom:<%= chart_pct(t, scale) %>"><% unless hide_ticks %><i><%= number_with_delimiter(t) %><%= tick_suffix %></i><% end %></span><% end %>
+      <% if target %><span class="chart-target" style="bottom:<%= chart_pct(target, scale) %>"></span><% end %>
+    </div>
+    <div class="chart-cols" style="--cols:<%= bars.size %>">
+      <% bars.each do |bar| %>
+        <div class="chart-col<%= " is-dim" if bar[:dim] %><%= " #{bar[:class]}" if bar[:class] %>" tabindex="0" aria-label="<%= bar[:aria] %>">
+          <div class="chart-bars">
+            <% bar[:series].each_with_index do |s, i| %>
+              <span class="chart-bar tone-<%= s[:tone] %><%= " is-zero" unless s[:value].to_f.positive? %>" style="height:<%= chart_pct(s[:value], scale) %>">
+                <% if bar[:cap] && i == bar[:series].size - 1 %><span class="chart-cap"><%= bar[:cap] %></span><% end %>
+              </span>
+            <% end %>
+          </div>
+          <div class="chart-x"><%= bar[:label] %><% if bar[:sub] %><small><%= bar[:sub] %></small><% end %></div>
+          <% if bar[:tip] %><div class="chart-tip" role="tooltip"><%= bar[:tip] %></div><% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</figure>

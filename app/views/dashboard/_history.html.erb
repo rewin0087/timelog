@@ -1,0 +1,62 @@
+<% holiday_months = @recent_months + [ @month_stats ] %>
+<div class="chart-grid-2">
+  <section class="card">
+    <h2>Last 3 months <small>hours logged vs <%= fmt_hours(Invoice::MONTHLY_HOURS) %></small></h2>
+    <% bars = @recent_months.map do |m|
+         status = m.complete? ? "Complete" : "Short by #{fmt_hours(m.remaining)}"
+         { label: m.month.strftime("%b"), sub: m.month.year, cap: fmt_hours(m.hours, precision: 1),
+           aria: "#{m.label}: #{fmt_hours(m.hours)} logged, #{m.weekdays} weekdays, #{status}",
+           tip: safe_join([ tag.strong(m.label), "#{fmt_hours(m.hours)} logged (#{m.percent}%)", "#{m.weekdays} weekdays · #{m.entries} activities", status ], tag.br),
+           series: [ { value: m.hours, tone: m.complete? ? "accent" : "soft" } ] }
+       end %>
+    <%= render "charts/columns", bars: bars, target: Invoice::MONTHLY_HOURS, target_label: "#{fmt_hours(Invoice::MONTHLY_HOURS)} target",
+               legend: [ [ "accent", "Complete" ], [ "soft", "Short" ] ], title: "Hours logged in the last 3 months" %>
+    <div class="mini-table-wrap"><table class="mini-table">
+      <thead><tr><th>Month</th><th class="num">Weekdays</th><th class="num">Logged</th><th class="num">Days</th><th>Status</th></tr></thead>
+      <tbody>
+        <% @recent_months.reverse_each do |m| %>
+          <tr>
+            <td><%= m.label %></td>
+            <td class="num"><%= m.weekdays %></td>
+            <td class="num"><%= fmt_hours(m.hours) %></td>
+            <td class="num"><%= m.weekdays_logged %>/<%= m.weekdays %></td>
+            <td><% if m.complete? %><span class="badge badge-good">✓ 160h complete</span><% else %><span class="badge badge-warn">! <%= fmt_hours(m.remaining) %> short</span><% end %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table></div>
+  </section>
+
+  <section class="card">
+    <h2>Holidays <small>days logged, this month + last 3 months</small></h2>
+    <% kinds = TimeStats::HOLIDAY_KINDS.map { |kind, label, _| [ kind, label, holiday_tone(kind) ] } %>
+    <% top = [ holiday_months.map(&:holiday_days).max, 1 ].max %>
+    <div class="chart-legend">
+      <% kinds.each do |_, label, tone| %><span><i class="legend-key tone-<%= tone %>"></i><%= label %></span><% end %>
+    </div>
+    <div class="hbars">
+      <% holiday_months.reverse_each do |m| %>
+        <div class="hbar-row" tabindex="0" aria-label="<%= m.label %>: <%= kinds.map { |k, l, _| "#{m.holidays[k]} #{l.downcase}" }.join(', ') %>">
+          <span class="hbar-label"><%= m.label %></span>
+          <span class="hbar-track">
+            <% kinds.each do |kind, label, tone| %>
+              <% next unless m.holidays[kind].positive? %>
+              <span class="hbar-seg tone-<%= tone %>" style="width:<%= chart_pct(m.holidays[kind], top) %>" title="<%= label %>: <%= pluralize(m.holidays[kind], 'day') %>"></span>
+            <% end %>
+          </span>
+          <span class="hbar-value"><%= pluralize(m.holiday_days, "day") %></span>
+        </div>
+      <% end %>
+    </div>
+    <div class="mini-table-wrap"><table class="mini-table">
+      <thead><tr><th>Month</th><% kinds.each do |kind, label, _| %><th class="num"><span class="th-long"><%= label %></span><span class="th-short" aria-hidden="true"><%= { public: "Public", non_working: "Non-work.", holiday: "Other" }[kind] %></span></th><% end %><th class="num">Total</th></tr></thead>
+      <tbody>
+        <% holiday_months.reverse_each do |m| %>
+          <tr><td><%= m.label %></td><% kinds.each do |kind, _, _| %><td class="num"><%= m.holidays[kind] %></td><% end %><td class="num"><strong><%= m.holiday_days %></strong></td></tr>
+        <% end %>
+      </tbody>
+      <tfoot><tr><td>Total</td><% kinds.each do |kind, _, _| %><td class="num"><%= holiday_months.sum { |m| m.holidays[kind] } %></td><% end %><td class="num"><%= holiday_months.sum(&:holiday_days) %></td></tr></tfoot>
+    </table></div>
+    <p class="muted chart-note">Counted from logs whose todo mentions “public holiday”, “non-working”, or “holiday”. A day counts once.</p>
+  </section>
+</div>

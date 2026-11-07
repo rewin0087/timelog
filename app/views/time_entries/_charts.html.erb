@@ -1,0 +1,110 @@
+<% this_month = Date.current.beginning_of_month %>
+<% logged_months = @months.select { |m| m.entries.positive? } %>
+<% cur = @months.last %>
+<% per_day = ->(entries, days) { days.positive? ? number_with_precision(entries.to_f / days, precision: 1) : "0" } %>
+<% tiles = [
+     [ "Hours logged", fmt_hours(cur.hours), "#{cur.percent}% of #{fmt_hours(cur.target)}", fmt_hours(@totals[:hours], precision: 0) ],
+     [ "Activities logged", number_with_delimiter(cur.entries), nil, number_with_delimiter(@totals[:entries]) ],
+     [ "Days logged", cur.days_logged, "#{cur.weekdays_logged} of #{cur.weekdays} weekdays", number_with_delimiter(@totals[:days]) ],
+     [ "Activities per day", per_day.(cur.entries, cur.days_logged), nil, per_day.(@totals[:entries], @totals[:days]) ]
+   ] %>
+<div class="stats stats-4">
+  <% tiles.each do |label, month_value, month_note, overall| %>
+    <div class="stat stat-split">
+      <div class="stat-label"><%= label %></div>
+      <div class="split">
+        <div><span class="stat-value"><%= month_value %></span><span class="split-label">This month (<%= cur.month.strftime("%b") %>)</span><% if month_note %><span class="split-label split-note"><%= month_note %></span><% end %></div>
+        <div class="split-overall"><span class="split-value"><%= overall %></span><span class="split-label" <% if @totals[:since] %>title="Since <%= @totals[:since].strftime('%-d %b %Y') %>"<% end %>>All time</span></div>
+      </div>
+    </div>
+  <% end %>
+</div>
+<div class="chart-grid-2">
+  <section class="card">
+    <h2>Hours per month <small>last 12 months</small></h2>
+    <% bars = @months.map do |m|
+         current = m.month == this_month
+         status = current ? "In progress" : (m.complete? ? "Complete" : "Short by #{fmt_hours(m.remaining)}")
+         { label: m.month.strftime("%b"), sub: (m.month.year if m.month.month == 1 || m == @months.first),
+           aria: "#{m.label}: #{fmt_hours(m.hours)} logged, #{status}",
+           tip: safe_join([ tag.strong(m.label), "#{fmt_hours(m.hours)} logged (#{m.percent}%)", "#{m.weekdays} weekdays · #{m.weekdays_logged} logged", status ], tag.br),
+           series: [ { value: m.hours, tone: current ? "ghost" : (m.complete? ? "accent" : "soft") } ] }
+       end %>
+    <%= render "charts/columns", bars: bars, target: Invoice::MONTHLY_HOURS, target_label: "#{fmt_hours(Invoice::MONTHLY_HOURS)} target",
+               legend: [ [ "accent", "Complete" ], [ "soft", "Short" ], [ "ghost", "This month (in progress)" ] ], title: "Hours logged per month" %>
+    <p class="muted chart-note">
+      <%= pluralize(logged_months.count { |m| m.month != this_month && m.complete? }, "complete month") %> of
+      <%= logged_months.count { |m| m.month != this_month } %> finished months with logs.
+    </p>
+  </section>
+
+  <section class="card">
+    <h2>Activities per month <small>last 12 months</small></h2>
+    <% bars = @months.map do |m|
+         { label: m.month.strftime("%b"), sub: (m.month.year if m.month.month == 1 || m == @months.first),
+           cap: (m.entries if m.entries.positive?),
+           aria: "#{m.label}: #{pluralize(m.entries, 'activity')} over #{pluralize(m.days_logged, 'day')}",
+           tip: safe_join([ tag.strong(m.label), pluralize(m.entries, "activity"), "over #{pluralize(m.days_logged, 'day')}",
+                            ("#{number_with_precision(m.entries.to_f / m.days_logged, precision: 1)} per day" if m.days_logged.positive?) ].compact, tag.br),
+           series: [ { value: m.entries, tone: "accent" } ] }
+       end %>
+    <%= render "charts/columns", bars: bars, tick_suffix: "", title: "Activities logged per month" %>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Activity <small>activities logged per day, last 18 weeks</small></h2>
+  <% weeks = @activity.each_slice(7).to_a %>
+  <div class="heatmap-wrap">
+    <div class="heatmap" style="--weeks:<%= weeks.size %>" role="img" aria-label="Activities logged per day over the last 18 weeks">
+      <% %w[Mon Tue Wed Thu Fri Sat Sun].each_with_index do |day, i| %>
+        <span class="heat-day" style="grid-row:<%= i + 2 %>"><%= day if i.even? %></span>
+      <% end %>
+      <% weeks.each_with_index do |week, w| %>
+        <% if w.zero? || week.first.first.month != weeks[w - 1].first.first.month %>
+          <span class="heat-month" style="grid-column:<%= w + 2 %>"><%= week.first.first.strftime("%b") %></span>
+        <% end %>
+        <% week.each_with_index do |(date, count), i| %>
+          <% level = count.nil? ? "future" : [ count, 4 ].min %>
+          <span class="heat-cell heat-<%= level %>" style="grid-column:<%= w + 2 %>;grid-row:<%= i + 2 %>"
+                title="<%= date.strftime('%a, %-d %b %Y') %>: <%= count.nil? ? 'upcoming' : pluralize(count, 'activity') %>"></span>
+        <% end %>
+      <% end %>
+    </div>
+  </div>
+  <div class="chart-legend heat-legend">Less <% [ 0, 1, 2, 3, 4 ].each do |l| %><i class="heat-cell heat-<%= l %>"></i><% end %> More <span class="muted">(4+)</span></div>
+</section>
+
+<div class="chart-grid-2">
+  <section class="card">
+    <h2>By weekday <small>activities, last 12 months</small></h2>
+    <% top = [ @by_weekday.map(&:last).max, 1 ].max %>
+    <div class="hbars">
+      <% @by_weekday.each do |day, count| %>
+        <div class="hbar-row" tabindex="0" aria-label="<%= day %>: <%= pluralize(count, 'activity') %>">
+          <span class="hbar-label"><%= day %></span>
+          <span class="hbar-track"><% if count.positive? %><span class="hbar-seg tone-<%= %w[Sat Sun].include?(day) ? 'soft' : 'accent' %>" style="width:<%= chart_pct(count, top) %>"></span><% end %></span>
+          <span class="hbar-value"><%= count %></span>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Most logged tasks <small>all time</small></h2>
+    <% if @top_tasks.empty? %>
+      <p class="muted empty">Nothing logged yet.</p>
+    <% else %>
+      <% top = @top_tasks.first.last %>
+      <div class="hbars hbars-wide">
+        <% @top_tasks.each do |todo, count| %>
+          <div class="hbar-row" tabindex="0" aria-label="<%= todo %>: <%= pluralize(count, 'time') %>">
+            <span class="hbar-label" title="<%= todo %>"><%= todo %></span>
+            <span class="hbar-track"><span class="hbar-seg tone-accent" style="width:<%= chart_pct(count, top) %>"></span></span>
+            <span class="hbar-value"><%= count %>×</span>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </section>
+</div>

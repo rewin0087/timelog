@@ -3,6 +3,12 @@ class TimeEntriesController < ApplicationController
 
   def index
     @entries = Current.user.time_entries.order(log_date: :desc, created_at: :desc).limit(200)
+    stats = TimeStats.new(Current.user)
+    @months = stats.months(Date.current.prev_month(11), Date.current)
+    @activity = stats.activity(18)
+    @by_weekday = stats.entries_by_weekday
+    @top_tasks = stats.top_tasks
+    @totals = stats.totals
   end
 
   def new
