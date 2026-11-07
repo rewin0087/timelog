@@ -1,6 +1,6 @@
 # Read-only statistics over a user's time entries and invoices, used by the dashboard,
 # Manage logs, and Invoices charts. Hours come from the stored per-entry hours, so a
-# month's logged hours reach Invoice::MONTHLY_HOURS once every weekday has an entry.
+# month's logged hours reach its target (User#month_capacity) once every weekday has an entry.
 class TimeStats
   # Holidays have no field of their own: they are entries whose todo mentions one of these.
   # Checked in order, so "Special non-working holiday" counts as non-working, not as a plain holiday.
@@ -10,8 +10,8 @@ class TimeStats
     [ :holiday, "Holiday", /holiday/i ]
   ].freeze
 
-  Month = Struct.new(:month, :weekdays, :hours, :entries, :days_logged, :weekdays_logged, :holidays, keyword_init: true) do
-    def target = Invoice::MONTHLY_HOURS
+  # target: the fixed monthly target, or weekdays x 8h when the user has no monthly target.
+  Month = Struct.new(:month, :weekdays, :hours, :entries, :days_logged, :weekdays_logged, :holidays, :target, keyword_init: true) do
     def complete? = hours.round(2) >= target
     def remaining = [ target - hours, 0 ].max
     def percent = target.zero? ? 0 : (hours / target * 100).round
@@ -53,7 +53,8 @@ class TimeStats
         entries: entries.size,
         days_logged: dates.size,
         weekdays_logged: dates.count { |d| !d.on_weekend? },
-        holidays: holiday_days(entries)
+        holidays: holiday_days(entries),
+        target: user.month_capacity(month)
       )
     end
   end
@@ -76,7 +77,7 @@ class TimeStats
 
   # Hours that should be logged by the end of today for the month to be on track.
   def expected_to_date
-    (today.beginning_of_month..today).sum { |d| TimeEntry.daily_hours_for(d) }
+    (today.beginning_of_month..today).sum { |d| user.daily_hours_for(d) }
   end
 
   # Weekdays before today, this month, with nothing logged.

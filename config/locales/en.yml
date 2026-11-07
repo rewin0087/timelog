@@ -5,3 +5,5 @@ en:
         lock_pin: "Lock code"
         lock_pin_confirmation: "Lock code confirmation"
         auto_lock_minutes: "Auto-lock"
+        monthly_hours: "Monthly target hours"
+        hours_mode: "Working hours"

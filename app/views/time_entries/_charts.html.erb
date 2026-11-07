@@ -30,7 +30,7 @@
            tip: safe_join([ tag.strong(m.label), "#{fmt_hours(m.hours)} logged (#{m.percent}%)", "#{m.weekdays} weekdays · #{m.weekdays_logged} logged", status ], tag.br),
            series: [ { value: m.hours, tone: current ? "ghost" : (m.complete? ? "accent" : "soft") } ] }
        end %>
-    <%= render "charts/columns", bars: bars, target: Invoice::MONTHLY_HOURS, target_label: "#{fmt_hours(Invoice::MONTHLY_HOURS)} target",
+    <%= render "charts/columns", bars: bars, target: monthly_target_line(Current.user), target_label: target_summary(Current.user),
                legend: [ [ "accent", "Complete" ], [ "soft", "Short" ], [ "ghost", "This month (in progress)" ] ], title: "Hours logged per month" %>
     <p class="muted chart-note">
       <%= pluralize(logged_months.count { |m| m.month != this_month && m.complete? }, "complete month") %> of

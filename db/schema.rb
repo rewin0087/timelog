@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_06_090000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_07_090000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -85,6 +85,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_06_090000) do
     t.integer "invoice_due_day", default: 5, null: false
     t.string "lock_pin_digest"
     t.integer "auto_lock_minutes", default: 5, null: false
+    t.string "hours_mode", default: "monthly", null: false
+    t.decimal "monthly_hours", precision: 6, scale: 2
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 

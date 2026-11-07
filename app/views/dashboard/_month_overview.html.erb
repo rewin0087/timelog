@@ -1,8 +1,8 @@
-<% m = @month_stats; today = Date.current %>
+<% m = @month_stats; today = Date.current; user = Current.user %>
 <% pace = m.hours - @expected_hours %>
 <section class="card">
   <div class="toolbar">
-    <h2><%= today.strftime("%B %Y") %> progress <small><%= m.weekdays %> weekdays · <%= fmt_hours(m.target) %> target</small></h2>
+    <h2><%= today.strftime("%B %Y") %> progress <small><%= m.weekdays %> weekdays · <%= user.fixed_target? ? "#{fmt_hours(m.target)} target" : "no monthly target, up to #{fmt_hours(m.target)}" %></small></h2>
     <% if m.complete? %>
       <span class="badge badge-good">✓ Month complete</span>
     <% elsif pace.round(2) >= 0 %>
@@ -24,9 +24,9 @@
              label: "#{fmt_hours(m.hours)} of #{fmt_hours(m.target)} logged" %>
 
   <h3 class="chart-title">Hours per day</h3>
-  <% share = TimeEntry.daily_hours_for(today.beginning_of_month.next_weekday) %>
+  <% share = user.daily_hours_for(today.beginning_of_month.next_weekday) %>
   <% bars = @month_days.map do |d|
-       daily = TimeEntry.daily_hours_for(d.date)
+       daily = user.daily_hours_for(d.date)
        name = d.date.strftime("%a, %-d %b")
        tone, value, tip =
          if d.weekend? && d.entries.zero? then [ "ghost", 0, "Weekend" ]
@@ -39,7 +39,7 @@
          aria: "#{name}: #{tip}", tip: safe_join([ tag.strong(name), tip ], tag.br),
          dim: d.weekend?, class: ("is-today" if d.date == today), series: [ { value: value, tone: tone } ] }
      end %>
-  <%= render "charts/columns", bars: bars, dense: true, target: share, target_label: "Daily share (#{fmt_hours(share)})",
+  <%= render "charts/columns", bars: bars, dense: true, target: share, target_label: user.fixed_target? ? "Daily share (#{fmt_hours(share)})" : "#{fmt_hours(share)} per day",
              legend: [ [ "accent", "Logged" ], *@month_days.filter_map(&:holiday).uniq.map { |k| [ holiday_tone(k), TimeStats.holiday_label(k) ] },
                        [ "missed", "Missed" ], [ "ghost", "Still to log" ] ],
              title: "Hours logged per day in #{today.strftime('%B %Y')}" %>

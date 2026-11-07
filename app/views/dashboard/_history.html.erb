@@ -1,7 +1,8 @@
 <% holiday_months = @recent_months + [ @month_stats ] %>
+<% user_target = monthly_target_line(Current.user) %>
 <div class="chart-grid-2">
   <section class="card">
-    <h2>Last 3 months <small>hours logged vs <%= fmt_hours(Invoice::MONTHLY_HOURS) %></small></h2>
+    <h2>Last 3 months <small>hours logged<%= " vs #{fmt_hours(user_target)}" if user_target %></small></h2>
     <% bars = @recent_months.map do |m|
          status = m.complete? ? "Complete" : "Short by #{fmt_hours(m.remaining)}"
          { label: m.month.strftime("%b"), sub: m.month.year, cap: fmt_hours(m.hours, precision: 1),
@@ -9,7 +10,7 @@
            tip: safe_join([ tag.strong(m.label), "#{fmt_hours(m.hours)} logged (#{m.percent}%)", "#{m.weekdays} weekdays · #{m.entries} activities", status ], tag.br),
            series: [ { value: m.hours, tone: m.complete? ? "accent" : "soft" } ] }
        end %>
-    <%= render "charts/columns", bars: bars, target: Invoice::MONTHLY_HOURS, target_label: "#{fmt_hours(Invoice::MONTHLY_HOURS)} target",
+    <%= render "charts/columns", bars: bars, target: user_target, target_label: (target_summary(Current.user) if user_target),
                legend: [ [ "accent", "Complete" ], [ "soft", "Short" ] ], title: "Hours logged in the last 3 months" %>
     <div class="mini-table-wrap"><table class="mini-table">
       <thead><tr><th>Month</th><th class="num">Weekdays</th><th class="num">Logged</th><th class="num">Days</th><th>Status</th></tr></thead>
@@ -20,7 +21,7 @@
             <td class="num"><%= m.weekdays %></td>
             <td class="num"><%= fmt_hours(m.hours) %></td>
             <td class="num"><%= m.weekdays_logged %>/<%= m.weekdays %></td>
-            <td><% if m.complete? %><span class="badge badge-good">✓ 160h complete</span><% else %><span class="badge badge-warn">! <%= fmt_hours(m.remaining) %> short</span><% end %></td>
+            <td><% if m.complete? %><span class="badge badge-good"><%= month_complete_label(Current.user, m) %></span><% else %><span class="badge badge-warn">! <%= fmt_hours(m.remaining) %> short</span><% end %></td>
           </tr>
         <% end %>
       </tbody>

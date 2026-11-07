@@ -433,6 +433,17 @@ kbd { padding:1px 6px; border:1px solid var(--line); border-bottom-width:2px; bo
 .auth h2 { font-size:24px; }
 
 
+/* Profile: working hours */
+.hours-settings { grid-column:1 / -1; display:grid; gap:12px; margin:0; padding:0; border:0; min-width:0; }
+.hours-settings .choice { flex-direction:row; align-items:flex-start; gap:12px; padding:14px 16px; border:1px solid var(--field-line); border-radius:12px; cursor:pointer; font-weight:500; }
+.hours-settings .choice:has(input:checked) { border-color:var(--accent); background:var(--accent-soft); }
+.hours-settings .choice > input { width:auto; flex:none; margin-top:3px; padding:0; accent-color:var(--accent); }
+.hours-settings .choice span { display:flex; flex-direction:column; gap:2px; }
+.hours-settings .choice small { color:var(--muted); font-weight:400; font-size:13px; }
+.hours-settings .monthly-field { margin-left:30px; max-width:320px; }
+.hours-settings:has(input[value=daily]:checked) .monthly-field { display:none; }
+.hours-settings > p { margin:0; font-size:13px; }
+
 /* ---------- Charts (app/views/charts, dashboard/_month_overview, dashboard/_history, time_entries/_charts, invoices/_charts) ----------
    Bars use the skin accent; holiday kinds use a fixed, colour-blind-checked trio (--s1..--s3) stepped per light/dark. */
 :root, [data-theme] {

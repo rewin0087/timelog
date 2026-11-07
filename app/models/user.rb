@@ -14,10 +14,44 @@ class User < ApplicationRecord
   validates :currency, presence: true
   validates :invoice_due_day, numericality: { only_integer: true, in: 1..31 }
 
+  # How logged hours are worked out (see README, "How hours are calculated").
+  HOURS_MODES = { "monthly" => "Fixed monthly target", "daily" => "No monthly target (8h per logged weekday)" }.freeze
+  DEFAULT_MONTHLY_HOURS = 160
+  DAILY_HOURS = 8
+  validates :hours_mode, inclusion: { in: HOURS_MODES.keys }
+  validates :monthly_hours, numericality: { greater_than: 0, less_than_or_equal_to: 744 }, allow_nil: true
+
+  # Existing logs are re-split whenever the way hours are worked out changes. Invoices keep their stored hours.
+  after_update_commit :rebalance_time_entries!, if: -> { saved_change_to_hours_mode? || saved_change_to_monthly_hours? }
+
   AUTO_LOCK_OPTIONS = { "1 minute" => 1, "5 minutes" => 5, "15 minutes" => 15, "30 minutes" => 30, "1 hour" => 60, "Never" => 0 }.freeze
   validates :auto_lock_minutes, inclusion: { in: AUTO_LOCK_OPTIONS.values }
   validates :lock_pin, format: { with: /\A\d{4,8}\z/, message: "must be 4 to 8 digits" }, confirmation: true, allow_nil: true
   validate :lock_pin_not_trivial, if: -> { lock_pin.present? }
+
+  def fixed_target? = hours_mode == "monthly"
+  def no_target? = hours_mode == "daily"
+
+  # The monthly target in fixed mode (blank = 160h); nil when there is no monthly target.
+  def monthly_target = fixed_target? ? (monthly_hours.presence || DEFAULT_MONTHLY_HOURS).to_d : nil
+
+  # Hours one working day is worth: the monthly target spread over the month's weekdays
+  # (160h / 21 weekdays = 7.619h), or a flat 8h with no monthly target. Weekends carry no hours.
+  def daily_hours_for(date)
+    return 0.to_d if date.on_weekend?
+    return DAILY_HOURS.to_d if no_target?
+    (monthly_target / TimeEntry.weekdays_in_month(date)).round(4)
+  end
+
+  # Most hours a month can hold: the fixed target, or every weekday at 8h with no target.
+  def month_capacity(month) = fixed_target? ? monthly_target : DAILY_HOURS.to_d * TimeEntry.weekdays_in_month(month)
+
+  # Re-splits every logged day with the current hours settings.
+  def rebalance_time_entries!
+    time_entries.group(:log_date).count.each do |date, count|
+      time_entries.where(log_date: date).update_all(hours: daily_hours_for(date) / count)
+    end
+  end
 
   def lock_configured? = lock_pin_digest.present?
   def auto_lock? = auto_lock_minutes.positive?

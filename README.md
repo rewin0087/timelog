@@ -90,15 +90,23 @@ Preview and download a PDF timelog (COUNT / DATE / TASK DONE / HOURS WORKED / NO
 
 ### Profile (`/profile/edit`)
 
-Name, address, hourly rate, currency (default `PHP`), bank details (account name, number, bank name, SWIFT), and invoice due day (1–31, default 5). Address, hourly rate, and the bank fields must be filled in before you can generate an invoice.
+Name, address, hourly rate, currency (default `PHP`), working hours (fixed monthly target or no target, see below), bank details (account name, number, bank name, SWIFT), and invoice due day (1–31, default 5). Address, hourly rate, and the bank fields must be filled in before you can generate an invoice.
 
 ## How hours are calculated
 
-Hours are **not** entered by hand. The app assumes a fixed **160 hours per month** (`Invoice::MONTHLY_HOURS`):
+Hours are **not** entered by hand. Each user picks one of two rules under **Working hours** in their profile:
 
-- **Per day:** 160 ÷ the number of weekdays in that month. For example, 20 weekdays gives 8h/day, 21 gives 7.62h, and 22 gives 7.27h. Weekends carry 0 hours.
-- **Per entry:** a day's hours are split equally between that day's entries. Adding, moving, or deleting an entry rebalances the day automatically.
-- **Invoices:** bill 160h prorated by the weekdays in the invoiced range, whatever has actually been logged. A full month always bills 160h.
+**Fixed monthly target** (default). The month's target, 160h unless the user sets their own (`users.monthly_hours`), is spread over its weekdays:
+
+- **Per day:** target ÷ the number of weekdays in that month. With 160h, 20 weekdays gives 8h/day, 21 gives 7.62h, and 22 gives 7.27h. Weekends carry 0 hours.
+- **Invoices:** bill the target prorated by the weekdays in the invoiced range, whatever has actually been logged. A full month always bills the full target.
+
+**No monthly target** (`hours_mode = "daily"`). There is no monthly limit; each day is capped at 8h (`User::DAILY_HOURS`):
+
+- **Per day:** every logged weekday counts 8h. Weekends carry 0 hours.
+- **Invoices:** bill the hours actually logged in the range. An invoice for a range with nothing logged is refused.
+
+In both modes a day's hours are split equally between that day's entries, and adding, moving, or deleting an entry rebalances the day. Changing the rule or the target recalculates the hours on all existing entries; invoices already generated keep their hours until they are generated again.
 
 ## Project layout
 

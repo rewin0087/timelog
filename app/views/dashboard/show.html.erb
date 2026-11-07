@@ -4,7 +4,7 @@
     <%= f.text_field :todo, placeholder: "What are you working on today?", required: true, class: "grow" %>
     <%= f.submit "Log it" %>
   <% end %>
-  <p class="muted">Hours are set automatically: <%= Invoice::MONTHLY_HOURS %>h ÷ <%= TimeEntry.weekdays_in_month(Date.current) %> weekdays = <strong><%= number_with_precision(TimeEntry.daily_hours_for(Date.current.beginning_of_month.next_weekday), precision: 2) %>h per day</strong> this month. Todos added on the same day share that day's hours.</p>
+  <p class="muted"><%= hours_rule(Current.user) %></p>
 </section>
 
 <%= render "inspirations/frame" %>

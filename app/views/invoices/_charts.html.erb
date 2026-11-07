@@ -21,7 +21,7 @@
                             "Logged #{fmt_hours(m[:logged_hours])}", (m[:invoices].zero? ? "Not invoiced" : nil) ].compact, tag.br),
            series: [ { value: m[:billed_hours], tone: "accent" }, { value: m[:logged_hours], tone: "muted" } ] }
        end %>
-    <%= render "charts/columns", bars: bars, target: Invoice::MONTHLY_HOURS, target_label: "#{fmt_hours(Invoice::MONTHLY_HOURS)} / month",
+    <%= render "charts/columns", bars: bars, target: monthly_target_line(Current.user), target_label: "#{fmt_hours(Current.user.monthly_target || 0)} / month",
                legend: [ [ "accent", "Billed" ], [ "muted", "Logged" ] ], title: "Billed and logged hours per month" %>
   </section>
 
