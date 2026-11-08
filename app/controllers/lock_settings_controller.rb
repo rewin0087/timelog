@@ -17,7 +17,7 @@ class LockSettingsController < ApplicationController
     else
       @user = @invoice_user = User.find(@lock_user.id)
       @password_user = User.find(@lock_user.id)
-      render "profiles/edit", status: :unprocessable_entity
+      render "profiles/edit", status: :unprocessable_content
     end
   end
 

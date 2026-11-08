@@ -30,7 +30,7 @@ class LocksController < ApplicationController
     else
       left = Current.session.unlock_attempts_left
       flash.now[:alert] = "Wrong code. #{left} #{"attempt".pluralize(left)} left before you're signed out."
-      render :show, status: :unprocessable_entity
+      render :show, status: :unprocessable_content
     end
   end
 

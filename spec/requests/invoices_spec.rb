@@ -166,7 +166,7 @@ RSpec.describe "Invoices" do
     it "explains what is wrong instead of a PDF" do
       Invoice.generate_for(user, Date.new(2026, 11, 1))
       get preview_invoices_path(period: "custom", from: "2026-11-02", to: "2026-11-06", due_date: "2026-11-20")
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("Can't preview this invoice yet", "INV-001 already covers November 2026")
       get preview_invoices_path(period: "custom", from: "nope")
       expect(response.body).to include("Pick a valid month")

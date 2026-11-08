@@ -24,7 +24,7 @@ RSpec.describe "Onboarding" do
 
   it "requires every invoice field" do
     patch onboarding_path(step: "invoice"), params: { user: details.merge(address: "", bank_swift: "") }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include("Address can&#39;t be blank", "Bank swift can&#39;t be blank")
   end
 

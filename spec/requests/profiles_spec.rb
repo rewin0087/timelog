@@ -7,10 +7,10 @@ RSpec.describe "Profile" do
 
   it "requires every invoice field" do
     patch profile_path, params: { section: "profile", user: { address: "" } }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include("Address can&#39;t be blank")
     patch profile_path, params: { section: "invoice", user: { bank_name: "", bill_to_address: "" } }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include("Bank name can&#39;t be blank", "Bill to address can&#39;t be blank")
     expect(user.reload).to have_attributes(address: be_present, bank_name: be_present)
   end
@@ -112,7 +112,7 @@ RSpec.describe "Profile" do
 
   it "rejects an invalid target" do
     patch profile_path, params: { user: { monthly_hours: "0" } }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include("Monthly target hours must be greater than 0")
   end
 
@@ -124,7 +124,7 @@ RSpec.describe "Profile" do
 
   it "shows errors" do
     patch profile_path, params: { section: "invoice", user: { hourly_rate: "-1" } }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include("Hourly rate must be greater than 0")
   end
 end

@@ -28,7 +28,7 @@ RSpec.describe "Admin administrators" do
     delete admin_administrator_path(admin)
     expect(flash[:alert]).to eq("You can't delete your own account.")
     patch admin_administrator_path(admin), params: { administrator: { access_level: "view" } }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(admin.reload).to be_super_admin
   end
 

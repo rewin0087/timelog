@@ -19,7 +19,7 @@ RSpec.describe "Registrations" do
 
   it "shows errors for invalid input" do
     post registration_path, params: { user: params[:user].merge(password_confirmation: "different") }
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include("Password confirmation doesn&#39;t match")
   end
 

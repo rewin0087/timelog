@@ -27,7 +27,7 @@ class TimeEntriesController < ApplicationController
     if @entry.save
       redirect_to time_entries_path, notice: "Timelog created."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -47,7 +47,7 @@ class TimeEntriesController < ApplicationController
     if @entry.update(entry_params)
       redirect_to time_entries_path, notice: "Timelog updated."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

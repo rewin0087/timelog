@@ -34,7 +34,7 @@ class Admin::TimeEntriesController < Admin::BaseController
     if @entry.update(entry_params)
       redirect_to month_path(@entry.log_date), notice: "Timelog updated."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

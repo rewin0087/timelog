@@ -23,7 +23,7 @@ class ProfilesController < ApplicationController
       # Only the form that was submitted shows the errors and the values typed into it.
       @user, @invoice_user = invoice ? [ User.find(user.id), user ] : [ user, User.find(user.id) ]
       @lock_user = @password_user = User.find(user.id)
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

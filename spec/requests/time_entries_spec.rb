@@ -83,7 +83,7 @@ RSpec.describe "Time entries" do
 
     it "re-renders with errors when invalid" do
       post time_entries_path, params: { time_entry: { log_date: "", todo: "" } }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("Todo can&#39;t be blank")
     end
   end
@@ -116,7 +116,7 @@ RSpec.describe "Time entries" do
 
     it "re-renders the edit form when invalid" do
       patch time_entry_path(entry), params: { time_entry: { todo: "" } }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
     end
 
     it "deletes an entry" do

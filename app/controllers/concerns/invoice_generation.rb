@@ -31,7 +31,7 @@ module InvoiceGeneration
 
     def render_preview_problem(messages)
       items = messages.map { |m| "<li>#{ERB::Util.h(m)}</li>" }.join
-      render status: :unprocessable_entity, layout: false, html: <<~HTML.html_safe
+      render status: :unprocessable_content, layout: false, html: <<~HTML.html_safe
         <!doctype html><meta charset="utf-8"><title>Can't preview yet</title>
         <body style="font:15px/1.5 system-ui,sans-serif;margin:40px;color:#1e1b4b"><h2>Can't preview this invoice yet</h2><ul>#{items}</ul></body>
       HTML

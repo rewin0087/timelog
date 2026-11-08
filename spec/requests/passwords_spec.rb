@@ -27,7 +27,7 @@ RSpec.describe "Password (on the profile)" do
 
   it "requires the current password" do
     change(current: "wrong-one")
-    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response).to have_http_status(:unprocessable_content)
     expect(response.body).to include("Current password is incorrect", "Invoice details")
     expect(user.reload.authenticate_password("password123")).to be_truthy
   end

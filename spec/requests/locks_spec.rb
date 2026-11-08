@@ -51,7 +51,7 @@ RSpec.describe "Locks" do
 
     it "rejects a wrong code and says how many attempts are left" do
       delete lock_path, params: { pin: "1111" }
-      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response).to have_http_status(:unprocessable_content)
       expect(response.body).to include("Wrong code. 4 attempts left")
       expect(session_record.reload).to be_locked
     end

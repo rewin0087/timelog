@@ -13,7 +13,7 @@ class RegistrationsController < ApplicationController
       start_new_session_for @user
       redirect_to onboarding_path, notice: "Welcome! Two quick steps and you're ready to go."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 end

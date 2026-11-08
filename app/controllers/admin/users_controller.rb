@@ -45,7 +45,7 @@ class Admin::UsersController < Admin::BaseController
     if @user.save
       redirect_to admin_user_path(@user), notice: "#{@user.name} was created. They finish onboarding (missing details and lock code) when they sign in."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -58,7 +58,7 @@ class Admin::UsersController < Admin::BaseController
     if @user.update(attrs)
       redirect_to edit_admin_user_path(@user), notice: "#{@user.name}'s details were saved."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 

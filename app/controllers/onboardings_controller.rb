@@ -33,7 +33,7 @@ class OnboardingsController < ApplicationController
       if @user.save(context: :invoice_details)
         @user.onboarded? ? finish : redirect_to(onboarding_path(step: "lock"))
       else
-        render :show, status: :unprocessable_entity
+        render :show, status: :unprocessable_content
       end
     end
 
@@ -43,7 +43,7 @@ class OnboardingsController < ApplicationController
       if @user.errors.none? && @user.update(attrs)
         finish
       else
-        render :show, status: :unprocessable_entity
+        render :show, status: :unprocessable_content
       end
     end
 

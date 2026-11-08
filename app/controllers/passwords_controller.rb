@@ -17,7 +17,7 @@ class PasswordsController < ApplicationController
       redirect_to edit_profile_path(anchor: "password"), notice: "Password updated. Any other devices were signed out."
     else
       @user = @invoice_user = @lock_user = User.find(@password_user.id)
-      render "profiles/edit", status: :unprocessable_entity
+      render "profiles/edit", status: :unprocessable_content
     end
   end
 end

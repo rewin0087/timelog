@@ -16,7 +16,7 @@ class Admin::AdministratorsController < Admin::BaseController
     if @administrator.save
       redirect_to admin_administrators_path, notice: "#{@administrator.name} can now sign in with #{@administrator.access_label.downcase}."
     else
-      render :new, status: :unprocessable_entity
+      render :new, status: :unprocessable_content
     end
   end
 
@@ -29,7 +29,7 @@ class Admin::AdministratorsController < Admin::BaseController
       @administrator.admin_sessions.where.not(id: Current.admin_session.id).destroy_all if @administrator.saved_change_to_password_digest?
       redirect_to admin_administrators_path, notice: "#{@administrator.name} was updated."
     else
-      render :edit, status: :unprocessable_entity
+      render :edit, status: :unprocessable_content
     end
   end
 
