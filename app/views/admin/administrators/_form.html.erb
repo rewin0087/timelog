@@ -1,0 +1,23 @@
+<%= form_with model: administrator, url: (administrator.persisted? ? admin_administrator_path(administrator) : admin_administrators_path), class: "admin-form" do |f| %>
+  <% if administrator.errors.any? %><p class="flash alert"><%= administrator.errors.full_messages.to_sentence %></p><% end %>
+  <div class="stack">
+    <label>Name <%= f.text_field :name, required: true %></label>
+    <label>Email <%= f.email_field :email_address, required: true %></label>
+    <label><%= administrator.persisted? ? "New password (leave blank to keep)" : "Password (min 10 characters)" %>
+      <%= f.password_field :password, required: administrator.new_record?, minlength: 10, maxlength: 72, autocomplete: "new-password" %></label>
+    <label>Confirm password <%= f.password_field :password_confirmation, required: administrator.new_record?, maxlength: 72, autocomplete: "new-password" %></label>
+  </div>
+  <fieldset class="access-choices">
+    <legend>Access level</legend>
+    <% Administrator::ACCESS_LEVELS.each do |key, label| %>
+      <% sample = Administrator.new(access_level: key) %>
+      <label class="choice <%= "god" if key == "all" %>">
+        <%= f.radio_button :access_level, key, checked: administrator.access_level == key %>
+        <span><strong><%= label %></strong>
+          <small><%= [ ("create users, timelogs and invoices" if sample.can?(:create)), ("edit users and timelogs" if sample.can?(:edit)),
+                       ("delete anything, reveal bank details, manage administrators" if key == "all") ].compact.then { |l| l.any? ? "View everything, and #{l.join('; ')}." : "View everything; change nothing." } %></small></span>
+      </label>
+    <% end %>
+  </fieldset>
+  <div class="form-actions"><%= f.submit administrator.persisted? ? "Save administrator" : "Create administrator" %> <%= link_to "Cancel", admin_administrators_path, class: "btn btn-secondary" %></div>
+<% end %>

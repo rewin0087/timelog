@@ -1,0 +1,11 @@
+<%= render "admin/users/header", user: @user %>
+<section class="card">
+  <h2>Edit timelog</h2>
+  <%= form_with model: @entry, url: admin_user_time_entry_path(@user, @entry), method: :patch, class: "stack" do |f| %>
+    <% if @entry.errors.any? %><p class="flash alert"><%= @entry.errors.full_messages.to_sentence %></p><% end %>
+    <label>Date <%= f.date_field :log_date, required: true %></label>
+    <label>Todo <%= f.text_area :todo, rows: 3, required: true %></label>
+    <p class="muted">Hours are recalculated for the day automatically from <%= @user.name %>'s working hours.</p>
+    <div class="form-actions"><%= f.submit "Save timelog" %> <%= link_to "Cancel", admin_user_time_entries_path(@user, month: @entry.log_date_was&.strftime("%Y-%m")), class: "btn btn-secondary" %></div>
+  <% end %>
+</section>

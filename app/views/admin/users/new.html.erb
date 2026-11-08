@@ -1,0 +1,11 @@
+<% content_for :title, "New user" %>
+<nav class="crumbs" aria-label="Breadcrumb"><%= link_to "Users", admin_users_path %> <span aria-hidden="true">/</span> <span>New user</span></nav>
+<section class="card">
+  <h2>New user</h2>
+  <p class="muted">Only name, email and password are required. Anything left out, plus the lock code, is asked for in onboarding when they first sign in.</p>
+  <%= form_with model: @user, url: admin_users_path, class: "admin-form" do |f| %>
+    <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
+    <%= render "fields", f:, user: @user %>
+    <div class="form-actions"><%= f.submit "Create user" %> <%= link_to "Cancel", admin_users_path, class: "btn btn-secondary" %></div>
+  <% end %>
+</section>

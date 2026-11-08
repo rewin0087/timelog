@@ -44,6 +44,15 @@ class Invoice < ApplicationRecord
     (user.monthly_target * weekdays / TimeEntry.weekdays_in_month(from)).round(2)
   end
 
+  # Prefill for a custom invoice: from the current month's first uninvoiced day up to today (or month end),
+  # due on the user's due day. Returns [from, to, due].
+  def self.suggested_range(user, today = Date.current)
+    last_end = user.invoices.where(period: today.beginning_of_month).maximum(:period_end)
+    from = last_end && last_end < today.end_of_month ? last_end + 1 : today.beginning_of_month
+    to = today >= from ? today : from.end_of_month
+    [ from, to, user.invoice_due_date_after(to) ]
+  end
+
   # Latest month that has finished (or finishes today).
   def self.default_period(today = Date.current)
     today == today.end_of_month ? today.beginning_of_month : today.prev_month.beginning_of_month

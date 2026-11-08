@@ -1,0 +1,51 @@
+<% content_for :title, "Users" %>
+<section class="card">
+  <div class="toolbar">
+    <h2>Users <small><%= pluralize(@total, "user") %><%= " matching “#{@q}”" if @q.present? %></small></h2>
+    <div class="toolbar-tabs">
+      <%= form_with url: admin_users_path, method: :get, class: "admin-search", role: "search" do %>
+        <%= search_field_tag :q, @q, placeholder: "Search name or email", aria: { label: "Search users" } %>
+      <% end %>
+      <% if can?(:create) %><%= link_to "+ New user", new_admin_user_path, class: "btn" %><% end %>
+    </div>
+  </div>
+  <% if @users.empty? %>
+    <p class="muted empty"><span class="empty-icon">🔎</span>No users found.</p>
+  <% else %>
+    <table class="rtable admin-users">
+      <thead><tr><th>User</th><th>Status</th><th>This month</th><th class="num">Timelogs</th><th class="num">Invoices</th><th>Last log</th><th></th></tr></thead>
+      <tbody>
+        <% @users.each do |u| %>
+          <% s = @per_user[u.id] %>
+          <% cap = u.month_capacity(Date.current) %>
+          <tr>
+            <td class="cell-main">
+              <%= link_to admin_user_path(u), class: "user-cell" do %>
+                <%= avatar(u.name, size: "sm") %><span><strong><%= u.name %></strong><small><%= u.email_address %></small></span>
+              <% end %>
+            </td>
+            <td data-label="Status"><%= user_status_badge(u) %></td>
+            <td data-label="This month">
+              <span class="mini-meter" title="<%= fmt_hours(s[:hours]) %> of <%= fmt_hours(cap) %>"><span style="width:<%= chart_pct(s[:hours], cap) %>"></span></span>
+              <small class="muted"><%= fmt_hours(s[:hours], precision: 1) %> / <%= fmt_hours(cap, precision: 0) %></small>
+            </td>
+            <td class="num" data-label="Timelogs"><%= number_with_delimiter(s[:entries]) %></td>
+            <td class="num" data-label="Invoices"><%= s[:invoices] %></td>
+            <td data-label="Last log"><%= s[:last_log] ? s[:last_log].strftime("%-d %b %Y") : tag.span("never", class: "muted") %></td>
+            <td class="actions"><%= link_to "Open →", admin_user_path(u) %></td>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+    <% if @pages > 1 %>
+      <nav class="pagination" aria-label="User pages">
+        <p class="muted">Page <%= @page %> of <%= @pages %></p>
+        <div class="pager-links">
+          <% (1..@pages).each do |p| %>
+            <% if p == @page %><span class="current"><%= p %></span><% else %><%= link_to p, admin_users_path(q: @q.presence, page: p) %><% end %>
+          <% end %>
+        </div>
+      </nav>
+    <% end %>
+  <% end %>
+</section>

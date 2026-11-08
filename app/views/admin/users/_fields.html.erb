@@ -1,0 +1,49 @@
+<%# User fields for admins. Bank fields stay masked: leave them blank to keep what is stored. %>
+<% editing = user.persisted? %>
+<% locked = editing && !can?(:edit) %>
+<fieldset class="admin-fieldset" <%= "disabled" if locked %>>
+  <legend>Account</legend>
+  <div class="stack">
+    <label>Full name <%= f.text_field :name, required: true %></label>
+    <label>Email <%= f.email_field :email_address, required: true %></label>
+    <label><%= editing ? "New password (leave blank to keep)" : "Password (min 8 characters)" %>
+      <%= f.password_field :password, required: !editing, minlength: 8, maxlength: 72, autocomplete: "new-password" %></label>
+    <label>Confirm password <%= f.password_field :password_confirmation, required: !editing, maxlength: 72, autocomplete: "new-password" %></label>
+  </div>
+</fieldset>
+<fieldset class="admin-fieldset" <%= "disabled" if locked %>>
+  <legend>Profile &amp; working hours</legend>
+  <div class="stack">
+    <label>Address <%= f.text_area :address, rows: 2 %></label>
+    <label>Working hours <%= f.select :hours_mode, User::HOURS_MODES.invert %></label>
+    <label>Monthly target hours (blank = <%= User::DEFAULT_MONTHLY_HOURS %>) <%= f.number_field :monthly_hours, step: 0.01, min: 1, max: 744 %></label>
+    <label>Auto-lock <%= f.select :auto_lock_minutes, User::AUTO_LOCK_OPTIONS %></label>
+  </div>
+</fieldset>
+<fieldset class="admin-fieldset" <%= "disabled" if locked %>>
+  <legend>Invoicing</legend>
+  <div class="stack">
+    <label>Client name <%= f.text_field :bill_to_name %></label>
+    <label>Client address <%= f.text_area :bill_to_address, rows: 3 %></label>
+    <label>Invoice item <%= f.text_field :invoice_item, maxlength: 40 %></label>
+    <label>Hourly rate <%= f.number_field :hourly_rate, step: 0.01, min: 0.01 %></label>
+    <label>Currency <%= f.text_field :currency, maxlength: 3, required: true %></label>
+    <label>Invoice due day <%= f.number_field :invoice_due_day, min: 1, max: 31, required: true %></label>
+  </div>
+</fieldset>
+<fieldset class="admin-fieldset sensitive" <%= "disabled" if locked %>>
+  <legend>Bank details <span class="badge badge-muted">masked</span></legend>
+  <% if editing %>
+    <dl class="masked-list">
+      <% { bank_account_name: [ "Account name", 2, :start ], bank_account_number: [ "Account number", 4, :end ], bank_name: [ "Bank", 3, :start ], bank_swift: [ "SWIFT", 4, :start ] }.each do |attr, (label, keep, from)| %>
+        <div><dt><%= label %></dt><dd><%= admin_masked(user.public_send(attr), keep:, from:) %></dd></div>
+      <% end %>
+    </dl>
+    <p class="muted">Type into a field only to replace it. Blank fields keep the stored value.</p>
+  <% end %>
+  <div class="stack">
+    <% { bank_account_name: "Account name", bank_account_number: "Account number", bank_name: "Bank name", bank_swift: "SWIFT" }.each do |attr, label| %>
+      <label><%= editing ? "New #{label == "SWIFT" ? label : label.downcase}" : label %> <%= f.text_field attr, value: "", autocomplete: "off", placeholder: (editing && user.public_send(attr).present? ? "Keep current" : nil) %></label>
+    <% end %>
+  </div>
+</fieldset>

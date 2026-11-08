@@ -5,6 +5,10 @@ module RequestAuthHelpers
   end
 
   def current_session_for(user) = user.sessions.order(:created_at).last
+
+  def admin_sign_in(admin, password: "admin-password")
+    post admin_session_path, params: { email_address: admin.email_address, password: password }
+  end
 end
 
 module SystemAuthHelpers

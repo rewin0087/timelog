@@ -1,0 +1,36 @@
+<%= render "header", user: @user %>
+<div class="admin-split">
+  <section class="card">
+    <h2>Details <% unless can?(:edit) %><span class="badge badge-muted">read only</span><% end %></h2>
+    <%= form_with model: @user, url: admin_user_path(@user), method: :patch, class: "admin-form" do |f| %>
+      <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
+      <%= render "fields", f:, user: @user %>
+      <% if can?(:edit) %><div class="form-actions"><%= f.submit "Save details" %></div><% end %>
+    <% end %>
+  </section>
+
+  <aside class="admin-side">
+    <section class="card">
+      <h2>Security</h2>
+      <dl class="fact-list">
+        <div><dt>Lock code</dt><dd><%= @user.lock_configured? ? "Set" : tag.span("Not set", class: "badge badge-warn") %></dd></div>
+        <div><dt>Auto-lock</dt><dd><%= User::AUTO_LOCK_OPTIONS.key(@user.auto_lock_minutes) %></dd></div>
+        <div><dt>Active sessions</dt><dd><%= @user.sessions.count %></dd></div>
+        <div><dt>Last seen</dt><dd><%= (seen = @user.sessions.maximum(:last_active_at)) ? "#{time_ago_in_words(seen)} ago" : "—" %></dd></div>
+      </dl>
+      <% if can?(:edit) %>
+        <div class="side-actions">
+          <%= button_to "Reset lock code", reset_lock_admin_user_path(@user), method: :patch, class: "btn btn-secondary", form: { data: { turbo_confirm: "Clear #{@user.name}'s lock code? They'll set a new one next time." } } %>
+          <%= button_to "Sign out everywhere", sign_out_everywhere_admin_user_path(@user), method: :delete, class: "btn btn-secondary", form: { data: { turbo_confirm: "Sign #{@user.name} out of every device?" } } %>
+        </div>
+      <% end %>
+    </section>
+    <% if can?(:destroy) %>
+      <section class="card danger-zone">
+        <h2>Danger zone</h2>
+        <p class="muted">Deletes <%= @user.name %> with <%= pluralize(@user.time_entries.count, "timelog") %> and <%= pluralize(@user.invoices.count, "invoice") %>. This can't be undone.</p>
+        <%= button_to "Delete user", admin_user_path(@user), method: :delete, class: "btn btn-danger", form: { data: { turbo_confirm: "Permanently delete #{@user.name} and all their data?" } } %>
+      </section>
+    <% end %>
+  </aside>
+</div>

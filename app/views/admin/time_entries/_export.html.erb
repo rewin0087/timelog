@@ -1,0 +1,27 @@
+<%# Timesheet PDF export for this user: the same periods as the user's Export report page.
+    "Month" exports the month being viewed on this page. %>
+<% month_value = @month.strftime("%Y-%m") %>
+<section class="card">
+  <h2>Export timelog PDF <small>same timesheet <%= @user.name.split.first %> gets from Export report</small></h2>
+  <%= form_with url: export_admin_user_time_entries_path(@user), method: :get, class: "row admin-export", data: { turbo: false, controller: "report-period" } do %>
+    <%= hidden_field_tag :month, month_value %>
+    <label class="grow">Period
+      <%= select_tag :period, options_for_select([
+            [ "#{@month.strftime('%B %Y')} (month shown)", "month" ], [ "Previous month (#{Date.current.prev_month.strftime('%B %Y')})", "previous_month" ],
+            [ "Last N days", "days" ], [ "Last N weeks", "weeks" ], [ "Custom date range", "custom" ]
+          ], "month"), data: { report_period_target: "period", action: "report-period#toggle" } %>
+    </label>
+    <label data-report-period-target="field" data-periods="days weeks" hidden>
+      <span>Number of <span data-report-period-target="unit">days</span></span>
+      <%= number_field_tag :count, 7, min: 1, max: 366 %>
+    </label>
+    <label data-report-period-target="field" data-periods="custom" hidden>From <%= date_field_tag :from, @month %></label>
+    <label data-report-period-target="field" data-periods="custom" hidden>To <%= date_field_tag :to, @month.end_of_month %></label>
+    <div class="export-actions">
+      <%= button_tag "Preview PDF", type: "button", class: "btn btn-secondary",
+            data: { action: "pdf-preview#open", pdf_preview_url_param: export_admin_user_time_entries_path(@user), pdf_preview_title_param: "Timelog · #{@user.name}" } %>
+      <%= link_to "Download PDF", export_admin_user_time_entries_path(@user, period: "month", month: month_value), class: "btn",
+            data: { turbo: false, action: "pdf-preview#download", pdf_preview_url_param: export_admin_user_time_entries_path(@user) } %>
+    </div>
+  <% end %>
+</section>

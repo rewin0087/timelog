@@ -10,9 +10,31 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_100000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_08_110000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
+
+  create_table "admin_sessions", force: :cascade do |t|
+    t.bigint "administrator_id", null: false
+    t.string "ip_address"
+    t.string "user_agent"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["administrator_id"], name: "index_admin_sessions_on_administrator_id"
+  end
+
+  create_table "administrators", force: :cascade do |t|
+    t.string "name", null: false
+    t.string "email_address", null: false
+    t.string "password_digest", null: false
+    t.boolean "super_admin", default: false, null: false
+    t.boolean "can_create", default: false, null: false
+    t.boolean "can_edit", default: false, null: false
+    t.datetime "last_signed_in_at"
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["email_address"], name: "index_administrators_on_email_address", unique: true
+  end
 
   create_table "daily_inspirations", force: :cascade do |t|
     t.date "day", null: false
@@ -93,6 +115,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_100000) do
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
+  add_foreign_key "admin_sessions", "administrators"
   add_foreign_key "invoices", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "time_entries", "users"

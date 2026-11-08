@@ -1,0 +1,30 @@
+<%= render "header", user: @user %>
+<% last_log = @user.time_entries.maximum(:log_date) %>
+<div class="admin-kpis">
+  <div class="admin-kpi" style="--i:0"><span class="kpi-label">Missed weekdays</span><span class="admin-kpi-value"><%= @missed.size %></span><span class="kpi-note"><%= @missed.any? ? @missed.first(3).map { |d| d.strftime("%-d %b") }.join(", ") + ("…" if @missed.size > 3).to_s : "none this month" %></span></div>
+  <div class="admin-kpi" style="--i:1"><span class="kpi-label">Last log</span><span class="admin-kpi-value"><%= last_log ? last_log.strftime("%-d %b") : "—" %></span><span class="kpi-note"><%= last_log ? (last_log == Date.current ? "today" : "#{time_ago_in_words(last_log)} ago") : "never logged" %></span></div>
+  <div class="admin-kpi" style="--i:2"><span class="kpi-label">Invoiced</span><span class="admin-kpi-value"><%= @invoiced.any? ? fmt_money(*@invoiced.max_by(&:last)) : "—" %></span><span class="kpi-note"><%= pluralize(@user.invoices.count, "invoice") %> all time</span></div>
+</div>
+
+<% if @totals[:entries].zero? %>
+  <section class="card"><p class="muted empty"><span class="empty-icon">🌱</span><%= @user.name %> hasn't logged anything yet.</p></section>
+<% else %>
+  <%= render "time_entries/charts", user: @user %>
+<% end %>
+
+<section class="card">
+  <div class="toolbar"><h2>Recent invoices</h2><%= link_to "All invoices →", admin_user_invoices_path(@user), class: "link-more" %></div>
+  <% if @invoices.empty? %>
+    <p class="muted">No invoices yet.</p>
+  <% else %>
+    <table class="rtable">
+      <thead><tr><th>No.</th><th>Period</th><th class="num">Hours</th><th class="num">Amount</th></tr></thead>
+      <tbody>
+        <% @invoices.each do |i| %>
+          <tr><td class="cell-main"><%= i.code %></td><td data-label="Period"><%= i.period_label %></td>
+              <td class="num" data-label="Hours"><%= number_with_precision(i.hours, precision: 2) %></td><td class="num" data-label="Amount"><%= fmt_money(i.currency, i.amount) %></td></tr>
+        <% end %>
+      </tbody>
+    </table>
+  <% end %>
+</section>

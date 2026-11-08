@@ -1,0 +1,11 @@
+<%# PDF preview dialog driven by the pdf-preview controller on <body>. %>
+<dialog class="pdf-modal" data-pdf-preview-target="dialog" data-action="click->pdf-preview#backdrop close->pdf-preview#closed">
+  <div class="pdf-modal-head">
+    <strong data-pdf-preview-target="title">PDF preview</strong>
+    <div class="pdf-modal-actions">
+      <a class="btn" data-pdf-preview-target="download" data-turbo="false" download>Download PDF</a>
+      <button type="button" class="btn btn-secondary" data-action="pdf-preview#close">Close</button>
+    </div>
+  </div>
+  <iframe data-pdf-preview-target="frame" title="PDF preview"></iframe>
+</dialog>

@@ -3,8 +3,7 @@ class InvoicesController < ApplicationController
     @invoices = Current.user.invoices.order(period_start: :desc)
     @default_period = Invoice.default_period
     @periods = (0..11).map { |i| Date.current.beginning_of_month.prev_month(i) }
-    @range_from, @range_to = suggested_range
-    @range_due = Current.user.invoice_due_date_after(@range_to)
+    @range_from, @range_to, @range_due = Invoice.suggested_range(Current.user)
     @invoice_months = TimeStats.new(Current.user).invoice_months(12)
   end
 
@@ -27,17 +26,5 @@ class InvoicesController < ApplicationController
     invoice = Current.user.invoices.find(params[:id])
     send_data InvoicePdf.new(invoice).render,
               filename: invoice.filename, type: "application/pdf", disposition: params[:inline].present? ? "inline" : "attachment"
-  end
-
-  private
-
-  # Prefills the custom range with the current month's first uninvoiced day up to today
-  # (or month end), so the remaining days are one click away after a partial invoice.
-  def suggested_range
-    today = Date.current
-    last_end = Current.user.invoices.where(period: today.beginning_of_month).maximum(:period_end)
-    from = last_end && last_end < today.end_of_month ? last_end + 1 : today.beginning_of_month
-    to = today >= from ? today : from.end_of_month
-    [from, to]
   end
 end

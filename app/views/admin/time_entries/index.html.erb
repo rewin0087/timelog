@@ -1,0 +1,52 @@
+<%= render "admin/users/header", user: @user %>
+<% by_day = @entries.group_by(&:log_date) %>
+<% total = @entries.sum(&:hours) %>
+<%= render "export" %>
+<section class="card">
+  <div class="toolbar">
+    <h2><%= @month.strftime("%B %Y") %> <small><%= pluralize(@entries.size, "timelog") %> · <%= fmt_hours(total) %> of <%= fmt_hours(@user.month_capacity(@month)) %></small></h2>
+    <div class="tabs month-pager">
+      <%= link_to "←", admin_user_time_entries_path(@user, month: @month.prev_month.strftime("%Y-%m")), class: "tab", aria: { label: "Previous month" } %>
+      <%= link_to "This month", admin_user_time_entries_path(@user), class: ["tab", ("active" if @month == Date.current.beginning_of_month)] %>
+      <%= link_to "→", admin_user_time_entries_path(@user, month: @month.next_month.strftime("%Y-%m")), class: "tab", aria: { label: "Next month" } %>
+    </div>
+  </div>
+  <%= render "charts/meter", value: total, total: @user.month_capacity(@month), label: "#{fmt_hours(total)} of #{fmt_hours(@user.month_capacity(@month))} logged" %>
+
+  <% if can?(:create) %>
+    <%= form_with model: @entry, url: admin_user_time_entries_path(@user), class: "row admin-quick-add" do |f| %>
+      <label>Date <%= f.date_field :log_date, required: true %></label>
+      <label class="grow">Todo <%= f.text_field :todo, required: true, placeholder: "What did #{@user.name.split.first} work on?" %></label>
+      <%= f.submit "Add timelog" %>
+    <% end %>
+  <% end %>
+
+  <% if @entries.empty? %>
+    <p class="muted empty"><span class="empty-icon">🌱</span>Nothing logged in <%= @month.strftime("%B %Y") %>.</p>
+  <% else %>
+    <ol class="activity-timeline">
+      <% by_day.each do |date, entries| %>
+        <li class="activity-timeline-day <%= "is-today" if date == Date.current %>">
+          <div class="activity-timeline-head">
+            <span class="date-chip"><%= date.strftime("%a, %d %b") %></span>
+            <span class="activity-timeline-total"><%= fmt_hours(entries.sum(&:hours)) %> · <%= pluralize(entries.size, "activity") %></span>
+          </div>
+          <ul class="activity-timeline-items">
+            <% entries.each do |e| %>
+              <li class="activity-timeline-item">
+                <span class="activity-timeline-todo"><%= e.todo %></span>
+                <span class="activity-timeline-hours"><%= fmt_hours(e.hours) %></span>
+                <% if can?(:edit) || can?(:destroy) %>
+                  <span class="item-actions">
+                    <% if can?(:edit) %><%= link_to "Edit", edit_admin_user_time_entry_path(@user, e) %><% end %>
+                    <% if can?(:destroy) %><%= button_to "Delete", admin_user_time_entry_path(@user, e), method: :delete, class: "link danger", form: { data: { turbo_confirm: "Delete this timelog?" } } %><% end %>
+                  </span>
+                <% end %>
+              </li>
+            <% end %>
+          </ul>
+        </li>
+      <% end %>
+    </ol>
+  <% end %>
+</section>

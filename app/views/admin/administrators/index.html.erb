@@ -1,0 +1,27 @@
+<% content_for :title, "Administrators" %>
+<section class="card">
+  <div class="toolbar">
+    <h2>Administrators <small>back-office accounts, separate from app users</small></h2>
+    <%= link_to "+ New administrator", new_admin_administrator_path, class: "btn" %>
+  </div>
+  <div class="admin-cards">
+    <% @administrators.each do |a| %>
+      <article class="admin-card <%= "is-god" if a.super_admin? %>">
+        <header><%= avatar(a.name) %><div><strong><%= a.name %><%= " (you)" if a == current_admin %></strong><small><%= a.email_address %></small></div></header>
+        <%= access_badge(a) %>
+        <ul class="access-list">
+          <% { view: "View", create: "Create", edit: "Edit", destroy: "Delete", reveal: "Reveal hidden data", manage_admins: "Manage administrators" }.each do |action, label| %>
+            <li class="<%= a.can?(action) ? "yes" : "no" %>"><%= a.can?(action) ? "✓" : "–" %> <%= label %></li>
+          <% end %>
+        </ul>
+        <footer>
+          <small class="muted">Last sign-in: <%= a.last_signed_in_at ? "#{time_ago_in_words(a.last_signed_in_at)} ago" : "never" %></small>
+          <span class="item-actions">
+            <%= link_to "Edit", edit_admin_administrator_path(a) %>
+            <% unless a == current_admin %><%= button_to "Remove", admin_administrator_path(a), method: :delete, class: "link danger", form: { data: { turbo_confirm: "Remove #{a.name}'s admin access?" } } %><% end %>
+          </span>
+        </footer>
+      </article>
+    <% end %>
+  </div>
+</section>

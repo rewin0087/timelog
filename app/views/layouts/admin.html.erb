@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title><%= content_for?(:title) ? "#{yield(:title)} · " : "" %>Time.log Admin</title>
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+    <meta name="robots" content="noindex">
+    <%= csrf_meta_tags %>
+    <%= csp_meta_tag %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+    <%= javascript_importmap_tags %>
+  </head>
+  <body class="admin<%= " with-sidebar" if current_admin %>" data-theme="<%= Admin::BaseController::ADMIN_THEMES.fetch(admin_theme) %>" data-admin-theme="<%= admin_theme %>" data-controller="pdf-preview reveal">
+    <% if current_admin %>
+      <aside class="sidebar admin-sidebar" data-controller="menu" data-action="keydown.esc@window->menu#close click@window->menu#outside">
+        <%= link_to admin_root_path, class: "brand" do %><span class="brand-mark">⏱</span> <%= render "shared/wordmark" %> <span class="admin-pill">Admin</span><% end %>
+        <button type="button" class="menu-toggle" aria-label="Account" aria-expanded="false" aria-controls="sidebar-extras"
+                data-menu-target="button" data-action="menu#toggle"><%= avatar(current_admin.name) %></button>
+        <nav>
+          <%= admin_nav_link "Dashboard", admin_root_path, "▦", %w[dashboard] %>
+          <%= admin_nav_link "Users", admin_users_path, "☺", %w[users time_entries invoices] %>
+          <% if can?(:manage_admins) %><%= admin_nav_link "Administrators", admin_administrators_path, "⚿", %w[administrators] %><% end %>
+        </nav>
+        <div class="sidebar-extras" id="sidebar-extras">
+          <div class="admin-skin" data-controller="theme" data-action="submit->theme#choose">
+            <span class="skins-label">Skin</span>
+            <div class="skin-toggle" role="group" aria-label="Admin skin">
+              <% [ [ "light", "☀", "Light" ], [ "dark", "☾", "Dark" ] ].each do |key, icon, label| %>
+                <%= button_to admin_theme_path, method: :patch, params: { theme: key }, class: ["skin-option", ("active" if admin_theme == key)],
+                      aria: { pressed: admin_theme == key }, form: { data: { theme_key: Admin::BaseController::ADMIN_THEMES.fetch(key) } } do %><span aria-hidden="true"><%= icon %></span> <%= label %><% end %>
+              <% end %>
+            </div>
+          </div>
+          <div class="admin-access">
+            <span class="skins-label">Your access</span>
+            <%= access_badge(current_admin) %>
+            <ul class="access-list">
+              <% { view: "View", create: "Create", edit: "Edit", destroy: "Delete", reveal: "Reveal hidden data", manage_admins: "Manage administrators" }.each do |action, label| %>
+                <li class="<%= can?(action) ? "yes" : "no" %>"><%= can?(action) ? "✓" : "–" %> <%= label %></li>
+              <% end %>
+            </ul>
+          </div>
+          <div class="who">
+            <span class="who-profile"><%= avatar(current_admin.name) %> <span class="who-name"><%= current_admin.name %></span></span>
+            <div class="who-actions"><%= button_to "Sign out", admin_session_path, method: :delete, class: "link" %></div>
+          </div>
+        </div>
+      </aside>
+    <% end %>
+    <main>
+      <% if notice %><p class="flash notice"><%= notice %></p><% end %>
+      <% if alert %><p class="flash alert"><%= alert %></p><% end %>
+      <%= yield %>
+    </main>
+    <%= render "shared/pdf_modal" if current_admin %>
+  </body>
+</html>

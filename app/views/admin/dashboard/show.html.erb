@@ -1,0 +1,116 @@
+<% content_for :title, "Dashboard" %>
+<% t = @totals %>
+<% this_month = Date.current.beginning_of_month %>
+<section class="admin-hero">
+  <div>
+    <p class="admin-eyebrow"><%= Date.current.strftime("%A, %-d %B %Y") %></p>
+    <h1>Good <%= Time.current.hour < 12 ? "morning" : (Time.current.hour < 18 ? "afternoon" : "evening") %>, <%= current_admin.name.split.first %></h1>
+    <p class="muted">Everything happening across Time.log, all users together. Open a user for their own charts, timelogs and invoices.</p>
+  </div>
+  <div class="admin-hero-actions">
+    <%= link_to "Browse users", admin_users_path, class: "btn btn-secondary" %>
+    <% if can?(:create) %><%= link_to "+ New user", new_admin_user_path, class: "btn" %><% end %>
+  </div>
+</section>
+
+<div class="admin-kpis">
+  <% [
+       [ "Users", number_with_delimiter(t[:users]), "#{t[:new_users]} new this month", "☺" ],
+       [ "Active this month", t[:active_users], "#{t[:users].positive? ? (t[:active_users] * 100 / t[:users]) : 0}% of users logged time", "◉" ],
+       [ "Hours this month", fmt_hours(t[:hours], precision: 1), "#{number_with_delimiter(t[:entries])} activities", "◔" ],
+       [ "Invoices", number_with_delimiter(t[:invoices]), @invoiced.first ? "#{fmt_money(*@invoiced.first)} in 12 months" : "none in 12 months", "❏" ],
+       [ "Needs onboarding", t[:pending], t[:pending].zero? ? "everyone is set up" : "missing details or lock code", "!" ]
+     ].each_with_index do |(label, value, note, icon), i| %>
+    <div class="admin-kpi" style="--i:<%= i %>">
+      <span class="admin-kpi-icon" aria-hidden="true"><%= icon %></span>
+      <span class="kpi-label"><%= label %></span>
+      <span class="admin-kpi-value"><%= value %></span>
+      <span class="kpi-note"><%= note %></span>
+    </div>
+  <% end %>
+</div>
+
+<div class="chart-grid-2">
+  <section class="card">
+    <h2>Hours logged <small>all users, last 12 months</small></h2>
+    <% bars = @months.map do |m|
+         { label: m[:month].strftime("%b"), sub: (m[:month].year if m[:month].month == 1 || m == @months.first),
+           cap: (fmt_hours(m[:hours], precision: 0) if m[:hours].positive?),
+           aria: "#{m[:month].strftime('%B %Y')}: #{fmt_hours(m[:hours])} by #{pluralize(m[:active_users], 'user')}",
+           tip: safe_join([ tag.strong(m[:month].strftime("%B %Y")), "#{fmt_hours(m[:hours])} logged", "#{pluralize(m[:entries], 'activity')} · #{pluralize(m[:active_users], 'active user')}" ], tag.br),
+           series: [ { value: m[:hours], tone: m[:month] == this_month ? "ghost" : "accent" } ] }
+       end %>
+    <%= render "charts/columns", bars: bars, legend: [ [ "accent", "Finished months" ], [ "ghost", "This month (in progress)" ] ], title: "Hours logged by all users per month" %>
+  </section>
+
+  <section class="card">
+    <h2>Active users <small>users who logged time, and new sign-ups</small></h2>
+    <% bars = @months.zip(@signups).map do |m, s|
+         { label: m[:month].strftime("%b"), sub: (m[:month].year if m[:month].month == 1 || m == @months.first),
+           aria: "#{m[:month].strftime('%B %Y')}: #{m[:active_users]} active, #{s[:users]} new",
+           tip: safe_join([ tag.strong(m[:month].strftime("%B %Y")), pluralize(m[:active_users], "active user"), "#{s[:users]} signed up" ], tag.br),
+           series: [ { value: m[:active_users], tone: "accent" }, { value: s[:users], tone: "s3" } ] }
+       end %>
+    <%= render "charts/columns", bars: bars, tick_suffix: "", legend: [ [ "accent", "Active" ], [ "s3", "Signed up" ] ], title: "Active and new users per month" %>
+  </section>
+</div>
+
+<div class="chart-grid-2">
+  <section class="card">
+    <h2>Top users <small>hours this month</small></h2>
+    <% if @top_users.empty? %>
+      <p class="muted empty"><span class="empty-icon">🌱</span>Nobody has logged time this month yet.</p>
+    <% else %>
+      <% top = @top_users.first.second %>
+      <ol class="leaderboard">
+        <% @top_users.each_with_index do |(user, hours, count), i| %>
+          <li style="--i:<%= i %>">
+            <span class="rank"><%= i + 1 %></span>
+            <%= avatar(user.name, size: "sm") %>
+            <span class="leader-main">
+              <%= link_to user.name, admin_user_path(user), class: "leader-name" %>
+              <span class="hbar-track"><span class="hbar-seg tone-accent" style="width:<%= chart_pct(hours, top) %>"></span></span>
+            </span>
+            <span class="leader-value"><strong><%= fmt_hours(hours, precision: 1) %></strong><small><%= pluralize(count, "activity") %></small></span>
+          </li>
+        <% end %>
+      </ol>
+    <% end %>
+  </section>
+
+  <section class="card">
+    <h2>Invoices <small>generated per month</small></h2>
+    <% bars = @invoice_months.map do |m|
+         { label: m[:month].strftime("%b"), sub: (m[:month].year if m[:month].month == 1 || m == @invoice_months.first),
+           cap: (m[:count] if m[:count].positive?),
+           aria: "#{m[:month].strftime('%B %Y')}: #{pluralize(m[:count], 'invoice')}",
+           tip: safe_join([ tag.strong(m[:month].strftime("%B %Y")), pluralize(m[:count], "invoice"), *m[:amounts].map { |cur, amt| fmt_money(cur, amt) } ], tag.br),
+           series: [ { value: m[:count], tone: "s1" } ] }
+       end %>
+    <%= render "charts/columns", bars: bars, tick_suffix: "", title: "Invoices generated per month" %>
+    <% if @invoiced.any? %>
+      <div class="currency-totals">
+        <% @invoiced.each do |cur, amt| %><span><small><%= cur %> · 12 months</small><strong><%= fmt_money(cur, amt) %></strong></span><% end %>
+      </div>
+    <% end %>
+  </section>
+</div>
+
+<section class="card">
+  <div class="toolbar"><h2>Latest activity <small>newest timelogs from every user</small></h2><%= link_to "All users →", admin_users_path, class: "link-more" %></div>
+  <% if @recent.empty? %>
+    <p class="muted empty"><span class="empty-icon">📝</span>No timelogs yet.</p>
+  <% else %>
+    <ol class="activity-feed">
+      <% @recent.each do |e| %>
+        <li>
+          <%= avatar(e.user.name, size: "sm") %>
+          <div class="feed-main">
+            <p><%= link_to e.user.name, admin_user_path(e.user), class: "feed-user" %> <span class="muted">logged</span> <%= e.todo %></p>
+            <small class="muted"><span class="date-chip"><%= e.log_date.strftime("%a, %d %b") %></span> · <%= fmt_hours(e.hours) %> · added <%= time_ago_in_words(e.created_at) %> ago</small>
+          </div>
+        </li>
+      <% end %>
+    </ol>
+  <% end %>
+</section>

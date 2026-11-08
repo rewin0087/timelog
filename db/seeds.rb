@@ -7,3 +7,12 @@
 #   ["Action", "Comedy", "Drama", "Horror"].each do |genre_name|
 #     MovieGenre.find_or_create_by!(name: genre_name)
 #   end
+
+# A super admin for local development (sign in at /admin). Never seeded in production.
+if Rails.env.development?
+  Administrator.find_or_create_by!(email_address: "admin@example.com") do |a|
+    a.name = "Super Admin"
+    a.password = "admin-password"
+    a.access_level = "all"
+  end
+end

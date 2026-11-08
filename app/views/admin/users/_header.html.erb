@@ -1,0 +1,23 @@
+<%# Identity card and tabs shown on every page inside a user. %>
+<% content_for :title, user.name %>
+<nav class="crumbs" aria-label="Breadcrumb"><%= link_to "Users", admin_users_path %> <span aria-hidden="true">/</span> <span><%= user.name %></span></nav>
+<section class="card user-hero">
+  <%= avatar(user.name, size: "lg") %>
+  <div class="user-hero-main">
+    <h1><%= user.name %> <%= user_status_badge(user) %></h1>
+    <p class="muted"><%= user.email_address %> · joined <%= user.created_at.strftime("%-d %b %Y") %></p>
+    <ul class="user-facts">
+      <li><small>Rate</small><strong><%= user.hourly_rate ? fmt_money(user.currency, user.hourly_rate) : "—" %>/h</strong></li>
+      <li><small>Hours</small><strong><%= user.fixed_target? ? "#{fmt_hours(user.monthly_target, precision: 0)} a month" : "No target (8h/day)" %></strong></li>
+      <li><small>Bills</small><strong><%= user.bill_to_name.presence || "—" %></strong></li>
+      <li><small>Signed in</small><strong><%= pluralize(user.sessions.count, "session") %></strong></li>
+    </ul>
+  </div>
+</section>
+<nav class="tabs user-tabs" aria-label="User sections">
+  <% [ [ "Overview", admin_user_path(user), "show" ], [ "Timelogs", admin_user_time_entries_path(user), "time_entries" ],
+       [ "Invoices", admin_user_invoices_path(user), "invoices" ], [ "Details", edit_admin_user_path(user), "edit" ] ].each do |label, path, key| %>
+    <% active = key == controller_name || (controller_name == "users" && key == action_name) || (key == "edit" && action_name == "update") %>
+    <%= link_to label, path, class: ["tab", ("active" if active)], aria: { current: ("page" if active) } %>
+  <% end %>
+</nav>

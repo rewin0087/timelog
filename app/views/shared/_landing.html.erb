@@ -1,11 +1,7 @@
 <%# Signed-out landing (sign in / sign up): product intro beside the form, over an animated background.
     Use with `render layout: "shared/landing"`; the block is the form card. %>
 <% content_for :body_class, "landing-page" %>
-<div class="landing-bg" aria-hidden="true">
-  <span class="blob blob-1"></span><span class="blob blob-2"></span><span class="blob blob-3"></span><span class="blob blob-4"></span>
-  <span class="landing-grid"></span>
-  <% 8.times do |i| %><span class="tick" style="--i:<%= i %>"></span><% end %>
-</div>
+<%= render "shared/animated_bg" %>
 
 <div class="landing">
   <header class="landing-intro">
