@@ -2,7 +2,7 @@
 # blank bank fields on the edit form keep the stored values, so nobody has to see them to save the form.
 class Admin::UsersController < Admin::BaseController
   PER_PAGE = 25
-  DETAIL_FIELDS = %i[name email_address address bill_to_name bill_to_address invoice_item hourly_rate currency tax_rate
+  DETAIL_FIELDS = %i[name email_address address bill_to_name bill_to_address invoice_item hourly_rate currency tax_rate invoice_hours_basis
                      report_design report_color invoice_design invoice_color
                      invoice_due_day hours_mode monthly_hours auto_lock_minutes].freeze
   BANK_FIELDS = %i[bank_account_name bank_account_number bank_name bank_swift].freeze

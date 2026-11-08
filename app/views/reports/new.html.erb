@@ -1,6 +1,6 @@
 <section class="card">
   <h2>Export timelog report (PDF)</h2>
-  <p class="muted">Defaults to the current month. Pick a different period to customise.</p>
+  <p class="muted">Defaults to the current month and your PDF style. Pick another period, or open Customize to change the design and colour.</p>
 
   <% period = params[:period].presence || "month" %>
   <%= form_with url: reports_path, method: :get, class: "stack", data: { turbo: false, controller: "report-period" } do |f| %>
@@ -16,7 +16,9 @@
     </label>
     <label data-report-period-target="field" data-periods="custom" <%= "hidden" unless period == "custom" %>>From <%= date_field_tag :from, params[:from] %></label>
     <label data-report-period-target="field" data-periods="custom" <%= "hidden" unless period == "custom" %>>To <%= date_field_tag :to, params[:to] %></label>
-    <%= render "shared/pdf_style_fields", kind: :report, style: PdfStyle.from(:report, params, Current.user), design_name: :design, color_name: :color %>
+    <%= render layout: "shared/customize", locals: { hint: "PDF design and header colour", open: params[:design].present? || params[:color].present? } do %>
+      <%= render "shared/pdf_style_fields", kind: :report, style: PdfStyle.from(:report, params, Current.user), design_name: :design, color_name: :color %>
+    <% end %>
     <div class="form-actions">
       <%= submit_tag "Show entries", name: nil, class: "btn-secondary" %>
       <%= button_tag "Preview PDF", type: "button", class: "btn btn-secondary",

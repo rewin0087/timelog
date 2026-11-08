@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe InvoicePdf do
-  let(:user) { create(:user, :invoice_ready, name: "Jamie Rivera", hourly_rate: 1000, bank_name: "BDO") }
+  let(:user) { create(:user, :fixed_rate, name: "Jamie Rivera", hourly_rate: 1000, bank_name: "BDO") }
 
   it "renders the invoice with header, bill-to, line item, totals, and bank details" do
     invoice = Invoice.generate_for(user, Date.new(2026, 10, 1))

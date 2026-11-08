@@ -13,36 +13,42 @@
     <label data-report-period-target="field" data-periods="custom" hidden>Due <%= date_field_tag :due_date, due, required: true %></label>
   </div>
   <p class="muted invoice-form-note">
-    <% if user.fixed_target? %>A month bills the <%= fmt_hours(user.monthly_target) %> target; custom dates prorate it by weekdays.<% else %>Bills the hours logged in the period.<% end %>
+    <% unless user.fixed_target? %>No monthly target, so the invoice bills the billable hours logged in the period.<% end %>
     Custom dates must sit in one month and not overlap another invoice. Generating the same period again refreshes it, including its extra items.
   </p>
 
-  <div class="invoice-extras" data-controller="invoice-items" data-invoice-items-max-value="<%= Invoice::MAX_ITEMS %>" data-invoice-items-currency-value="<%= user.currency %>"
-       data-action="input->invoice-items#refresh">
-    <div class="invoice-extras-head">
-      <h3>Extra items <small>optional</small></h3>
-      <label class="tax-field">Tax rate (%)
-        <%= number_field_tag :tax_rate, user.tax_rate.to_s("F").sub(/\.0\z/, ""), min: 0, max: 100, step: 0.01, title: "Defaults to the tax rate in invoice details" %>
-      </label>
-    </div>
-    <p class="muted" data-invoice-items-target="empty">Add reimbursements, allowances or other charges on top of the <%= user.fixed_target? ? "monthly rate" : "hourly charge" %>.</p>
-    <div class="item-rows" data-invoice-items-target="list"></div>
-    <template data-invoice-items-target="template">
-      <div class="item-row" data-invoice-items-target="row">
-        <label class="item-desc">Description <input type="text" name="items[__INDEX__][description]" maxlength="60" required placeholder="e.g. Equipment allowance"></label>
-        <label class="item-qty">Qty <input type="number" name="items[__INDEX__][quantity]" value="1" min="0.01" step="0.01" required></label>
-        <label class="item-rate">Rate <input type="number" name="items[__INDEX__][rate]" min="0" step="0.01" required placeholder="0.00"></label>
-        <span class="item-total" aria-live="polite"></span>
-        <button type="button" class="item-remove" data-action="invoice-items#remove" aria-label="Remove item">×</button>
-      </div>
-    </template>
-    <button type="button" class="btn btn-secondary btn-sm" data-invoice-items-target="add" data-action="invoice-items#add">+ Add item</button>
-  </div>
+  <%= render layout: "shared/customize", locals: { hint: [ ("Hours to bill" if user.fixed_target?), "extra items", "tax", "PDF style" ].compact.to_sentence.upcase_first } do %>
+    <% if user.fixed_target? %>
+      <%= render "invoices/hours_basis_fields", name: :hours_basis, selected: Invoice.hours_basis_for(user), user: user %>
+    <% end %>
 
-  <div class="invoice-style">
-    <h3>PDF style</h3>
-    <%= render "shared/pdf_style_fields", kind: :invoice, style: user.invoice_style, design_name: :design, color_name: :color %>
-  </div>
+    <div class="invoice-extras" data-controller="invoice-items" data-invoice-items-max-value="<%= Invoice::MAX_ITEMS %>" data-invoice-items-currency-value="<%= user.currency %>"
+         data-action="input->invoice-items#refresh">
+      <div class="invoice-extras-head">
+        <h3>Extra items <small>optional</small></h3>
+        <label class="tax-field">Tax rate (%)
+          <%= number_field_tag :tax_rate, user.tax_rate.to_s("F").sub(/\.0\z/, ""), min: 0, max: 100, step: 0.01, title: "Defaults to the tax rate in invoice details" %>
+        </label>
+      </div>
+      <p class="muted" data-invoice-items-target="empty">Add reimbursements, allowances or other charges on top of the <%= user.fixed_target? ? "monthly rate" : "hourly charge" %>.</p>
+      <div class="item-rows" data-invoice-items-target="list"></div>
+      <template data-invoice-items-target="template">
+        <div class="item-row" data-invoice-items-target="row">
+          <label class="item-desc">Description <input type="text" name="items[__INDEX__][description]" maxlength="60" required placeholder="e.g. Equipment allowance"></label>
+          <label class="item-qty">Qty <input type="number" name="items[__INDEX__][quantity]" value="1" min="0.01" step="0.01" required></label>
+          <label class="item-rate">Rate <input type="number" name="items[__INDEX__][rate]" min="0" step="0.01" required placeholder="0.00"></label>
+          <span class="item-total" aria-live="polite"></span>
+          <button type="button" class="item-remove" data-action="invoice-items#remove" aria-label="Remove item">×</button>
+        </div>
+      </template>
+      <button type="button" class="btn btn-secondary btn-sm" data-invoice-items-target="add" data-action="invoice-items#add">+ Add item</button>
+    </div>
+
+    <div class="invoice-style">
+      <h3>PDF style</h3>
+      <%= render "shared/pdf_style_fields", kind: :invoice, style: user.invoice_style, design_name: :design, color_name: :color %>
+    </div>
+  <% end %>
 
   <div class="form-actions">
     <%= f.submit local_assigns.fetch(:submit_label, "Generate invoice") %>

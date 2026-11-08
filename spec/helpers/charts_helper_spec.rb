@@ -32,6 +32,6 @@ RSpec.describe ChartsHelper do
   end
 
   it "maps holiday kinds to fixed series tones" do
-    expect(TimeStats::HOLIDAY_KINDS.map { |k, _, _| helper.holiday_tone(k) }).to eq(%w[s1 s2 s3])
+    expect(TimeStats::HOLIDAY_KINDS.map { |k, _, _| helper.holiday_tone(k) }).to eq(%w[s1 s2 s3 s4 s5])
   end
 end

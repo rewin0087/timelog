@@ -77,6 +77,15 @@ RSpec.describe "Profile" do
     expect(response.body).to include("Report design is not included in the list")
   end
 
+  it "saves the default hours to bill with the invoice details" do
+    get edit_profile_path
+    expect(response.body).to include("Hours to bill (default)", "Fixed monthly rate (skip time logs)")
+    patch profile_path, params: { section: "invoice", user: { invoice_hours_basis: "target" } }
+    expect(user.reload.invoice_hours_basis).to eq("target")
+    patch profile_path, params: { section: "invoice", user: { invoice_hours_basis: "bogus" } }
+    expect(response).to have_http_status(:unprocessable_content)
+  end
+
   it "only saves the fields of the submitted form" do
     patch profile_path, params: { section: "profile", user: { name: "Kept", bank_name: "Ignored" } }
     patch profile_path, params: { section: "invoice", user: { bank_name: "Saved", name: "Ignored" } }

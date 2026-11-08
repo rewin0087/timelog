@@ -11,10 +11,8 @@ module ChartsHelper
     ticks.map { |t| t == t.to_i ? t.to_i : t.round(2) }
   end
 
-  # Fixed series colour per holiday kind (tone-s1..s3), shared by every holiday chart.
-  def holiday_tone(kind)
-    "s#{TimeStats::HOLIDAY_KINDS.index { |k, _, _| k == kind } + 1}"
-  end
+  # Fixed series colour per holiday/leave kind (tone-s1..s5, see DayKind), shared by every holiday chart.
+  def holiday_tone(kind) = DayKind[kind].tone
 
   # Position of `value` on a 0..max scale, as a CSS percentage string.
   def chart_pct(value, max)
@@ -31,9 +29,9 @@ module ChartsHelper
     "#{currency} #{number_with_delimiter(number_with_precision(value, precision: 2))}"
   end
 
-  # "+ 2 extra items · 12% tax" under an invoice's period, when it has either.
+  # "+ fixed rate · 2 extra items · 12% tax" under an invoice's period, when it has any of them.
   def invoice_extras_note(invoice)
-    parts = [ (pluralize(invoice.items.size, "extra item") if invoice.items.any?),
+    parts = [ ("fixed rate" if invoice.fixed_rate?), (pluralize(invoice.items.size, "extra item") if invoice.items.any?),
               ("#{number_with_precision(invoice.tax_rate, precision: 2, strip_insignificant_zeros: true)}% tax" if invoice.tax?) ].compact
     tag.small("+ #{parts.join(' · ')}", class: "invoice-extras-note") if parts.any?
   end

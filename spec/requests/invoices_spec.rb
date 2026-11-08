@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Invoices" do
-  let(:user) { create(:user, :invoice_ready, hourly_rate: 1000) }
+  let(:user) { create(:user, :fixed_rate, hourly_rate: 1000) }
 
   before { sign_in(user) }
 
@@ -173,6 +173,36 @@ RSpec.describe "Invoices" do
     end
   end
 
+  describe "hours to bill" do
+    before { create(:time_entry, user:, log_date: Date.new(2026, 10, 1)) }
+
+    it "offers the choice with the account default selected, for a fixed target" do
+      get invoices_path
+      expect(Nokogiri::HTML(response.body).at_css("input[name=hours_basis][checked]")["value"]).to eq("target")
+      user.update!(invoice_hours_basis: "logged")
+      get invoices_path
+      expect(Nokogiri::HTML(response.body).at_css("input[name=hours_basis][checked]")["value"]).to eq("logged")
+    end
+
+    it "overrides the default for one invoice, month or custom dates, and in the preview" do
+      post invoices_path, params: { period: "2026-10", hours_basis: "logged" }
+      expect(user.invoices.last).to have_attributes(hours_basis: "logged", hours: user.daily_hours_for(Date.new(2026, 10, 1)).round(2))
+      post invoices_path, params: { period: "custom", from: "2026-11-02", to: "2026-11-06", due_date: "2026-11-20", hours_basis: "target" }
+      expect(user.invoices.last).to have_attributes(hours_basis: "target", hours: (160.to_d * 5 / 21).round(2))
+      get preview_invoices_path(period: "2026-10", hours_basis: "target")
+      expect(pdf_text(response.body)).to include("160", "P160,000")
+    end
+
+    it "hides the choice and bills logged hours without a monthly target" do
+      user.update!(hours_mode: "daily")
+      get invoices_path
+      expect(response.body).not_to include('name="hours_basis"')
+      expect(response.body).to include("bills the billable hours logged in the period")
+      post invoices_path, params: { period: "2026-10", hours_basis: "target" }
+      expect(user.invoices.last).to have_attributes(hours_basis: "logged", hours: 8)
+    end
+  end
+
   describe "GET /invoices/:id" do
     let(:invoice) { Invoice.generate_for(user, Date.new(2026, 10, 1)) }
 
@@ -188,7 +218,7 @@ RSpec.describe "Invoices" do
     end
 
     it "cannot open another user's invoice" do
-      other = Invoice.generate_for(create(:user, :invoice_ready), Date.new(2026, 10, 1))
+      other = Invoice.generate_for(create(:user, :fixed_rate), Date.new(2026, 10, 1))
       get invoice_path(other)
       expect(response).to have_http_status(:not_found)
     end

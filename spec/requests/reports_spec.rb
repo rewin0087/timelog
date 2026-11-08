@@ -60,6 +60,13 @@ RSpec.describe "Reports" do
       expect(html.css(".pdf-swatch").size).to eq(PdfStyle::PRESETS.size)
     end
 
+    it "keeps the style options in a Customize section, closed unless a style was picked" do
+      get reports_path
+      expect(Nokogiri::HTML(response.body).at_css("details.customize")["open"]).to be_nil
+      get reports_path(design: "modern")
+      expect(Nokogiri::HTML(response.body).at_css("details.customize")["open"]).not_to be_nil
+    end
+
     it "exports with the picked design and colour" do
       expect(TimelogPdf).to receive(:new).with(anything, user, style: have_attributes(design: "minimal", color: "B91C1C")).and_call_original
       get export_report_path(period: "month", design: "minimal", color: "#b91c1c")

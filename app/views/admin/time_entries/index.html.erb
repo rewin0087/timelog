@@ -19,6 +19,7 @@
       <label class="grow">Todo <%= f.text_field :todo, required: true, placeholder: "What did #{@user.name.split.first} work on?" %></label>
       <%= f.submit "Add timelog" %>
     <% end %>
+    <%= render "time_entries/leave_hint" %>
   <% end %>
 
   <% if @entries.empty? %>

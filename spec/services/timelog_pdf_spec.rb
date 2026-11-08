@@ -54,4 +54,11 @@ RSpec.describe TimelogPdf do
       expect(pdf_text(TimelogPdf.new(ReportRange.new(ActionController::Parameters.new({})), user).render)).to include("JAMIE RIVERA  ·  NOVEMBER 1 - 30 2026")
     end
   end
+
+  it "notes leave and unpaid days in the remarks column" do
+    create(:time_entry, user:, log_date: Date.new(2026, 11, 2), todo: "Sick leave")
+    create(:time_entry, user:, log_date: Date.new(2026, 11, 3), todo: "Absent")
+    text = pdf_text(render({}))
+    expect(text).to include("Paid leave", "Unpaid - not billable", "0.00")
+  end
 end

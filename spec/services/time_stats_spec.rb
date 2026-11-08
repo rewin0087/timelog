@@ -29,7 +29,7 @@ RSpec.describe TimeStats do
 
       expect(oct).to have_attributes(month: Date.new(2026, 10, 1), weekdays: 22, entries: 4, days_logged: 3, weekdays_logged: 2)
       expect(oct.hours).to be_within(0.001).of(2 * 7.2727)
-      expect(oct.holidays).to eq(public: 1, non_working: 0, holiday: 0)
+      expect(oct.holidays).to eq(public: 1, non_working: 0, holiday: 0, paid_leave: 0, unpaid: 0)
       expect(oct.holiday_days).to eq(1)
       expect(oct.label).to eq("Oct 2026")
       expect(oct).not_to be_complete
@@ -120,7 +120,7 @@ RSpec.describe TimeStats do
   end
 
   it "compares billed and logged hours per invoiced month" do
-    user.update!(address: "x", hourly_rate: 100, bank_account_name: "x", bank_account_number: "1", bank_name: "x", bank_swift: "x")
+    user.update!(address: "x", hourly_rate: 100, bank_account_name: "x", bank_account_number: "1", bank_name: "x", bank_swift: "x", invoice_hours_basis: "target")
     Invoice.generate_for_range(user, Date.new(2026, 10, 1), Date.new(2026, 10, 15))
     Invoice.generate_for_range(user, Date.new(2026, 10, 16), Date.new(2026, 10, 31))
     log(Date.new(2026, 10, 1))
@@ -160,6 +160,37 @@ RSpec.describe TimeStats do
       expect(stats.expected_between(Date.new(2026, 11, 1), Date.new(2026, 11, 30))).to eq(stats.expected_to_date)
       expect(stats.missed_between(Date.new(2026, 11, 1), Date.new(2026, 11, 30)).size).to eq(8)
       expect(stats.expected_between(Date.new(2026, 12, 1), Date.new(2026, 12, 31))).to eq(0)
+    end
+  end
+
+  describe "unpaid days" do
+    it "are logged but not owed: the month's billable target and expected hours leave them out" do
+      log(Date.new(2026, 11, 2), "Absent")
+      log(Date.new(2026, 11, 3), "Sick leave")
+      month = stats.current_month
+      share = user.daily_hours_for(Date.new(2026, 11, 2))
+      expect(month).to have_attributes(unpaid_days: 1, weekdays_logged: 2)
+      expect(month.unpaid_hours).to eq(share)
+      expect(month.billable_target).to eq(160 - share)
+      expect(month.hours).to eq(share) # only the paid sick leave
+      expect(stats.expected_to_date).to eq((Date.new(2026, 11, 1)..Date.new(2026, 11, 13)).sum { |d| user.daily_hours_for(d) } - share)
+      expect(stats.missed_weekdays).not_to include(Date.new(2026, 11, 2))
+    end
+
+    it "marks a day unpaid only when all its todos are unpaid" do
+      log(Date.new(2026, 11, 2), "Absent"); log(Date.new(2026, 11, 2), "Fix bug")
+      log(Date.new(2026, 11, 3), "Absent")
+      days = stats.current_month_days.index_by(&:date)
+      expect(days[Date.new(2026, 11, 2)].holiday).to be_nil
+      expect(days[Date.new(2026, 11, 3)].holiday).to eq(:unpaid)
+      expect(stats.range(Date.new(2026, 11, 1), Date.new(2026, 11, 30)).unpaid_days).to eq(1)
+    end
+
+    it "lets a month with unpaid days still be complete" do
+      (Date.new(2026, 10, 1)..Date.new(2026, 10, 31)).each { |d| log(d, d == Date.new(2026, 10, 6) ? "Unpaid vacation leave" : "Work") unless d.on_weekend? }
+      oct = stats.months(Date.new(2026, 10, 1), Date.new(2026, 10, 1)).first
+      expect(oct).to be_complete
+      expect(oct.remaining).to eq(0)
     end
   end
 end

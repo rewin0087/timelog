@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe Invoice do
-  let(:user) { create(:user, :invoice_ready, hourly_rate: 1000, invoice_due_day: 5) }
+  let(:user) { create(:user, :fixed_rate, hourly_rate: 1000, invoice_due_day: 5) }
 
   describe ".generate_for" do
     it "bills a whole month at 160 hours, dated the last day, due on the due day" do
@@ -31,7 +31,7 @@ RSpec.describe Invoice do
     it "numbers invoices per user" do
       Invoice.generate_for(user, Date.new(2026, 9, 1))
       expect(Invoice.generate_for(user, Date.new(2026, 10, 1)).number).to eq(2)
-      expect(Invoice.generate_for(create(:user, :invoice_ready), Date.new(2026, 10, 1)).number).to eq(1)
+      expect(Invoice.generate_for(create(:user, :fixed_rate), Date.new(2026, 10, 1)).number).to eq(1)
     end
   end
 
@@ -66,7 +66,7 @@ RSpec.describe Invoice do
 
     it "allows other users to invoice the same period" do
       Invoice.generate_for(user, Date.new(2026, 10, 1))
-      expect { Invoice.generate_for(create(:user, :invoice_ready), Date.new(2026, 10, 1)) }.not_to raise_error
+      expect { Invoice.generate_for(create(:user, :fixed_rate), Date.new(2026, 10, 1)) }.not_to raise_error
     end
 
     it "rejects a due date before the invoice date" do
@@ -128,6 +128,76 @@ RSpec.describe Invoice do
       expect(part.period_label).to eq("1–15 October 2026")
       expect(full.filename).to eq("invoice-#{user.name.parameterize}-2026-09.pdf")
       expect(part.filename).to eq("invoice-#{user.name.parameterize}-2026-10-01-to-2026-10-15.pdf")
+    end
+  end
+
+  describe "leave and unpaid days" do
+    let(:user) { create(:user, :invoice_ready, hourly_rate: 1000) }
+
+    it "bills paid leave like work and unpaid days as nothing, from time logs" do
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 1), todo: "Paid vacation leave")
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 2), todo: "Absent")
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 5), todo: "Unpaid sick leave")
+      invoice = Invoice.generate_for(user, Date.new(2026, 10, 1))
+      expect(invoice).to have_attributes(hours_basis: "logged", hours: user.daily_hours_for(Date.new(2026, 10, 1)).round(2))
+    end
+
+    it "ignores leave and unpaid days entirely at the fixed monthly rate" do
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 2), todo: "Absent")
+      expect(Invoice.generate_for(user, Date.new(2026, 10, 1), hours_basis: "target").hours).to eq(160)
+    end
+
+    it "bills only logged billable hours with no monthly target" do
+      user.update!(hours_mode: "daily")
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 1), todo: "Sick leave")
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 2), todo: "Absent")
+      expect(Invoice.generate_for(user, Date.new(2026, 10, 1)).hours).to eq(8)
+    end
+
+    it "refuses an invoice for a range that is only unpaid days with no monthly target" do
+      user.update!(hours_mode: "daily")
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 2), todo: "Absent")
+      expect { Invoice.generate_for_range(user, Date.new(2026, 10, 2), Date.new(2026, 10, 2)) }.to raise_error(ActiveRecord::RecordInvalid, /no hours to bill/)
+    end
+  end
+
+  describe "hours basis" do
+    let(:user) { create(:user, hourly_rate: 1000) } # new accounts bill from time logs
+
+    before do
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 1), todo: "Work")
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 2), todo: "Work")
+    end
+
+    it "defaults to the billable hours from time logs" do
+      expect(user.invoice_hours_basis).to eq("logged")
+      invoice = Invoice.generate_for(user, Date.new(2026, 10, 1))
+      expect(invoice).to have_attributes(hours_basis: "logged", hours: (2 * user.daily_hours_for(Date.new(2026, 10, 1))).round(2))
+      expect(invoice).not_to be_fixed_rate
+    end
+
+    it "skips time logs at the fixed monthly rate, when asked or by the user's default" do
+      expect(Invoice.generate_for(user, Date.new(2026, 10, 1), hours_basis: "target")).to have_attributes(hours_basis: "target", hours: 160)
+      user.update!(invoice_hours_basis: "target")
+      expect(Invoice.generate_for(user, Date.new(2026, 9, 1)).hours).to eq(160)
+      user.invoices.destroy_all
+      expect(Invoice.generate_for_range(user, Date.new(2026, 10, 1), Date.new(2026, 10, 2), hours_basis: "logged").hours_basis).to eq("logged")
+    end
+
+    it "always bills logged hours without a monthly target" do
+      user.update!(hours_mode: "daily", invoice_hours_basis: "target")
+      expect(Invoice.hours_basis_for(user, "target")).to eq("logged")
+      expect(Invoice.generate_for(user, Date.new(2026, 10, 1), hours_basis: "target")).to have_attributes(hours_basis: "logged", hours: 16)
+    end
+
+    it "ignores an unknown basis" do
+      expect(Invoice.hours_basis_for(user, "bogus")).to eq("logged")
+      user.update!(invoice_hours_basis: "target")
+      expect(Invoice.hours_basis_for(user, "bogus")).to eq("target")
+    end
+
+    it "refuses an invoice from time logs when nothing billable was logged" do
+      expect { Invoice.generate_for(user, Date.new(2026, 9, 1)) }.to raise_error(ActiveRecord::RecordInvalid, /no hours to bill/)
     end
   end
 end

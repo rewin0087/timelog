@@ -136,14 +136,16 @@ RSpec.describe "Dashboard" do
       create(:time_entry, user:, log_date: Date.new(2026, 11, 2), todo: "Public holiday")
       create(:time_entry, user:, log_date: Date.new(2026, 10, 30), todo: "Special non-working holiday")
       create(:time_entry, user:, log_date: Date.new(2026, 8, 21), todo: "Holiday")
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 3), todo: "Sick leave")
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 4), todo: "Absent")
       get root_path
       table = Nokogiri::HTML(response.body).css(".chart-grid-2 .card")[1].css(".mini-table")
-      rows = table.css("tbody tr").map { |r| r.css("td").map { |c| c.text.strip } }
+      rows = table.css("tbody tr").map { |r| r.css("td").map { |c| (c.at_css(".th-long") || c).text.strip } }
       expect(rows).to eq([
-        [ "Nov 2026", "1", "0", "0", "1" ], [ "Oct 2026", "0", "1", "0", "1" ],
-        [ "Sep 2026", "0", "0", "0", "0" ], [ "Aug 2026", "0", "0", "1", "1" ]
+        [ "Nov 2026", "1", "0", "0", "1", "1", "3" ], [ "Oct 2026", "0", "1", "0", "0", "0", "1" ],
+        [ "Sep 2026", "0", "0", "0", "0", "0", "0" ], [ "Aug 2026", "0", "0", "1", "0", "0", "1" ]
       ])
-      expect(table.css("tfoot td").map { |c| c.text.strip }).to eq(%w[Total 1 1 1 3])
+      expect(table.css("tfoot td").map { |c| c.text.strip }).to eq(%w[Total 1 1 1 1 1 5])
     end
   end
 end

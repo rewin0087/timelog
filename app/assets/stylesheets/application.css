@@ -459,17 +459,20 @@ kbd { padding:1px 6px; border:1px solid var(--line); border-bottom-width:2px; bo
 .hours-settings > p { margin:0; font-size:13px; }
 
 /* ---------- Charts (app/views/charts, dashboard/_month_overview, dashboard/_history, time_entries/_charts, invoices/_charts) ----------
-   Bars use the skin accent; holiday kinds use a fixed, colour-blind-checked trio (--s1..--s3) stepped per light/dark. */
+   Bars use the skin accent; holiday/leave kinds use fixed series colours (--s1..--s5, see DayKind) stepped per light/dark;
+   --s5 (unpaid / absent) is a hatched grey so it reads as "not billed". */
 :root, [data-theme] {
-  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --good:#047857; --good-soft:#ecfdf5; --warn:#b45309; --warn-soft:#fffbeb;
+  --s1:#2a78d6; --s2:#eb6834; --s3:#1baf7a; --s4:#8b5cf6; --s5:#64748b; --good:#047857; --good-soft:#ecfdf5; --warn:#b45309; --warn-soft:#fffbeb;
   --bar-muted:color-mix(in srgb, var(--muted) 42%, var(--surface)); --bar-soft:color-mix(in srgb, var(--accent) 45%, var(--surface));
   --grid-line:color-mix(in srgb, var(--line) 80%, transparent);
 }
 :is([data-theme=midnight], [data-theme=neon], [data-theme=aurora]) {
-  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --good:#6ee7b7; --good-soft:rgba(16,185,129,.14); --warn:#fbbf24; --warn-soft:rgba(251,191,36,.12);
+  --s1:#3987e5; --s2:#d95926; --s3:#199e70; --s4:#a78bfa; --s5:#94a3b8; --good:#6ee7b7; --good-soft:rgba(16,185,129,.14); --warn:#fbbf24; --warn-soft:rgba(251,191,36,.12);
 }
 .tone-accent { background:var(--accent); } .tone-soft { background:var(--bar-soft); } .tone-muted { background:var(--bar-muted); }
-.tone-s1 { background:var(--s1); } .tone-s2 { background:var(--s2); } .tone-s3 { background:var(--s3); }
+.tone-s1 { background:var(--s1); } .tone-s2 { background:var(--s2); } .tone-s3 { background:var(--s3); } .tone-s4 { background:var(--s4); }
+.tone-s5 { background:repeating-linear-gradient(135deg, color-mix(in srgb, var(--s5) 55%, transparent) 0 3px, color-mix(in srgb, var(--s5) 20%, transparent) 3px 7px); box-shadow:inset 0 0 0 1.5px var(--s5); }
+.legend-key.tone-s5 { box-shadow:inset 0 0 0 1px var(--s5); }
 .tone-ghost { background:color-mix(in srgb, var(--accent) 7%, transparent); box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 30%, transparent); }
 .tone-missed { background:repeating-linear-gradient(135deg, color-mix(in srgb, var(--warn) 30%, transparent) 0 3px, transparent 3px 7px); box-shadow:inset 0 0 0 1.5px var(--warn); }
 
@@ -1045,3 +1048,49 @@ body.admin[data-theme=violet] .admin-card.is-god { background:linear-gradient(16
 .pdf-defaults > div { display:grid; gap:10px; padding:14px; border:1px solid var(--line); border-radius:12px; }
 .pdf-defaults strong { font-size:14px; }
 .stack > .pdf-defaults ~ p, .stack > h3 + p { margin:0; }
+
+/* Holiday and leave wording hint (time_entries/_leave_hint) */
+.leave-hint { grid-column:1 / -1; font-size:13px; }
+.leave-hint summary { cursor:pointer; font-weight:600; color:var(--accent); width:max-content; max-width:100%; }
+.leave-hint p { margin:6px 0 0; }
+.leave-hint code { padding:1px 6px; border-radius:6px; background:var(--accent-soft); color:var(--fg); font:600 12px/1.6 ui-monospace, monospace; white-space:nowrap; }
+.hero .leave-hint summary { color:var(--on-accent); opacity:.9; }
+.hero .leave-hint code { background:rgba(255,255,255,.2); color:var(--on-accent); }
+.hero .leave-hint .muted { color:rgba(255,255,255,.8); }
+.admin-quick-add + .leave-hint { margin:-4px 0 12px; }
+@media (max-width: 640px) {
+  .mini-table.holiday-table :is(th, td) { padding:6px 3px; }
+}
+.holiday-table th { white-space:normal; line-height:1.25; vertical-align:bottom; }
+.holiday-table th.num { max-width:72px; }
+
+/* "Hours to bill" choice (invoices/_hours_basis_fields) */
+.hours-basis { grid-column:1 / -1; display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:10px; margin:0; padding:0; border:0; min-width:0; }
+.hours-basis legend { margin-bottom:8px; font-size:13px; font-weight:600; color:var(--muted); }
+.hours-basis .choice { display:flex; flex-direction:row; align-items:flex-start; gap:12px; padding:12px 14px; border:1px solid var(--field-line); border-radius:12px; cursor:pointer; font-weight:500; }
+.hours-basis .choice:has(input:checked) { border-color:var(--accent); background:var(--accent-soft); }
+.hours-basis .choice > input { width:auto; flex:none; margin-top:3px; accent-color:var(--accent); }
+.hours-basis .choice span { display:flex; flex-direction:column; gap:2px; }
+.hours-basis .choice small { color:var(--muted); font-weight:400; font-size:13px; }
+.hours-basis > p { grid-column:1 / -1; margin:0; font-size:13px; }
+@media (max-width: 640px) { .hours-basis { grid-template-columns:minmax(0, 1fr); } }
+
+/* Collapsible "Customize" section on generate/export forms (shared/_customize) */
+.customize { grid-column:1 / -1; flex-basis:100%; border:1px solid var(--line); border-radius:14px; background:color-mix(in srgb, var(--accent-soft) 35%, transparent); transition:border-color .2s, background .2s; }
+.customize[open] { border-color:color-mix(in srgb, var(--accent) 35%, var(--line)); background:var(--surface); }
+.customize > summary { display:flex; align-items:center; gap:10px; padding:12px 16px; cursor:pointer; list-style:none; user-select:none; border-radius:14px; }
+.customize > summary::-webkit-details-marker { display:none; }
+.customize > summary:hover .customize-title { color:var(--accent); }
+.customize > summary:focus-visible { outline:none; box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+.customize-icon { display:grid; place-items:center; flex:none; width:28px; height:28px; border-radius:8px; background:var(--accent-soft); color:var(--accent); font-size:15px; transition:transform .4s cubic-bezier(.3,1.4,.5,1); }
+.customize[open] .customize-icon { transform:rotate(90deg); }
+.customize-title { font-weight:700; font-size:14px; transition:color .15s; }
+.customize-hint { flex:1; min-width:0; color:var(--muted); font-size:13px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.customize-chevron { flex:none; color:var(--muted); font-size:20px; line-height:1; transition:transform .25s; }
+.customize[open] .customize-chevron { transform:rotate(90deg); }
+.customize-body { display:grid; gap:16px; padding:4px 16px 16px; animation:customize-in .25s cubic-bezier(.2,.7,.2,1); }
+@keyframes customize-in { from { opacity:0; transform:translateY(-6px); } }
+.customize-body .invoice-extras { background:color-mix(in srgb, var(--accent-soft) 45%, transparent); }
+@media (max-width: 640px) {
+  .customize-hint { display:none; }
+}

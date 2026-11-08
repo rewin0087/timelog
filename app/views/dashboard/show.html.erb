@@ -5,6 +5,7 @@
     <%= f.submit "Log it" %>
   <% end %>
   <p class="muted"><%= hours_rule(Current.user) %></p>
+  <%= render "time_entries/leave_hint" %>
 </section>
 
 <%= render "inspirations/frame" %>

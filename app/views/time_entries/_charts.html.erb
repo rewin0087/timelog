@@ -4,7 +4,7 @@
 <% cur = @months.last %>
 <% per_day = ->(entries, days) { days.positive? ? number_with_precision(entries.to_f / days, precision: 1) : "0" } %>
 <% tiles = [
-     [ "Hours logged", fmt_hours(cur.hours), "#{cur.percent}% of #{fmt_hours(cur.target)}", fmt_hours(@totals[:hours], precision: 0) ],
+     [ "Hours logged", fmt_hours(cur.hours), "#{cur.percent}% of #{fmt_hours(cur.billable_target)}", fmt_hours(@totals[:hours], precision: 0) ],
      [ "Activities logged", number_with_delimiter(cur.entries), nil, number_with_delimiter(@totals[:entries]) ],
      [ "Days logged", cur.days_logged, "#{cur.weekdays_logged} of #{cur.weekdays} weekdays", number_with_delimiter(@totals[:days]) ],
      [ "Activities per day", per_day.(cur.entries, cur.days_logged), nil, per_day.(@totals[:entries], @totals[:days]) ]

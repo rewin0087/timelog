@@ -10,7 +10,7 @@
     <div class="kpi"><span class="kpi-label">Activities logged</span><span class="kpi-value"><%= number_with_delimiter(o.entries) %></span>
       <span class="kpi-note">across <%= pluralize(o.days_logged, "day") %><%= ", #{number_with_precision(o.entries.to_f / o.days_logged, precision: 1)} per day" if o.days_logged.positive? %></span></div>
     <div class="kpi"><span class="kpi-label">Weekdays logged</span><span class="kpi-value"><%= o.weekdays_logged %>/<%= o.weekdays %></span>
-      <span class="kpi-note"><%= o.holiday_days.positive? ? "incl. #{pluralize(o.holiday_days, 'holiday')}" : "no holidays" %></span></div>
+      <span class="kpi-note"><%= [ ("#{pluralize(o.holiday_days, 'holiday')}/leave" if o.holiday_days.positive?), ("#{o.unpaid_days} unpaid" if o.unpaid_days.positive?) ].compact.join(", ").presence&.prepend("incl. ") || "no holidays or leave" %></span></div>
     <div class="kpi"><span class="kpi-label">Missed weekdays</span><span class="kpi-value"><%= @missed.size %></span>
       <span class="kpi-note"><%= @missed.any? ? @missed.first(4).map { |d| d.strftime("%-d %b") }.join(", ") + ("…" if @missed.size > 4).to_s : "none" %></span></div>
   </div>
@@ -27,7 +27,7 @@
            dim: d.weekend?, class: ("is-today" if d.date == today),
            aria: "#{d.date.strftime('%a %-d %b')}: #{fmt_hours(d.hours)}, #{pluralize(d.entries, 'activity')}#{", #{status}" if status}",
            tip: safe_join([ tag.strong(d.date.strftime("%a, %-d %b")), "#{fmt_hours(d.hours)} · #{pluralize(d.entries, 'activity')}", status ].compact, tag.br),
-           series: [ { value: (future || missed) ? Current.user.daily_hours_for(d.date) * (missed ? 1 : 0.35) : d.hours, tone: tone } ] }
+           series: [ { value: (future || missed) ? Current.user.daily_hours_for(d.date) * (missed ? 1 : 0.35) : (d.holiday == :unpaid ? Current.user.daily_hours_for(d.date) * 0.35 : d.hours), tone: tone } ] }
        end %>
     <% kinds = o.days.filter_map(&:holiday).uniq %>
     <h3 class="chart-title">Hours per day</h3>

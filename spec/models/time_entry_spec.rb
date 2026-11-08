@@ -77,4 +77,36 @@ RSpec.describe TimeEntry do
       expect(user.time_entries.between(Date.new(2026, 11, 1), Date.new(2026, 11, 30)).chronological).to eq([ early, late ])
     end
   end
+
+  describe "leave and unpaid days" do
+    let(:user) { create(:user) }
+
+    it "gives paid leave a full working day" do
+      entry = create(:time_entry, user:, log_date: Date.new(2026, 11, 2), todo: "Sick leave")
+      expect(entry.reload.hours).to eq(user.daily_hours_for(Date.new(2026, 11, 2)))
+    end
+
+    it "logs unpaid days at 0 hours and lets billable todos share the whole day" do
+      day = Date.new(2026, 11, 3)
+      absent = create(:time_entry, user:, log_date: day, todo: "Absent")
+      expect(absent.reload.hours).to eq(0)
+      work = create(:time_entry, user:, log_date: day, todo: "Fix bug")
+      expect(work.reload.hours).to eq(user.daily_hours_for(day))
+      expect(absent.reload.hours).to eq(0)
+    end
+
+    it "rebalances when a todo is reworded to or from unpaid" do
+      entry = create(:time_entry, user:, log_date: Date.new(2026, 11, 4), todo: "Fix bug")
+      entry.update!(todo: "Unpaid vacation leave")
+      expect(entry.reload.hours).to eq(0)
+      entry.update!(todo: "Paid vacation leave")
+      expect(entry.reload.hours).to be > 0
+    end
+
+    it "keeps unpaid days at 0 when the hours rule changes" do
+      entry = create(:time_entry, user:, log_date: Date.new(2026, 11, 5), todo: "Unpaid sick leave")
+      user.update!(hours_mode: "daily")
+      expect(entry.reload.hours).to eq(0)
+    end
+  end
 end

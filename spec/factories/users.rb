@@ -17,6 +17,11 @@ FactoryBot.define do
 
     trait :invoice_ready # the default; kept so specs can say what they rely on
 
+    # Invoices bill the fixed monthly target, skipping time logs (the default bills from time logs).
+    trait :fixed_rate do
+      invoice_hours_basis { "target" }
+    end
+
     trait :without_lock do
       lock_pin { nil }
     end

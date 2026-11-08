@@ -2,19 +2,18 @@
 # Manage logs, and Invoices charts. Hours come from the stored per-entry hours, so a
 # month's logged hours reach its target (User#month_capacity) once every weekday has an entry.
 class TimeStats
-  # Holidays have no field of their own: they are entries whose todo mentions one of these.
-  # Checked in order, so "Special non-working holiday" counts as non-working, not as a plain holiday.
-  HOLIDAY_KINDS = [
-    [ :public, "Public holiday", /\b(public|regular|national)\s+holiday/i ],
-    [ :non_working, "Non-working holiday", /non[\s-]?working/i ],
-    [ :holiday, "Holiday", /holiday/i ]
-  ].freeze
+  # Holiday and leave kinds as [key, label, pattern] (see DayKind, which also says whether each is billable).
+  HOLIDAY_KINDS = DayKind::DISPLAY.map { |k| [ k.key, k.label, k.pattern ] }.freeze
 
   # target: the fixed monthly target, or weekdays x 8h when the user has no monthly target.
-  Month = Struct.new(:month, :weekdays, :hours, :entries, :days_logged, :weekdays_logged, :holidays, :target, keyword_init: true) do
-    def complete? = hours.round(2) >= target
-    def remaining = [ target - hours, 0 ].max
-    def percent = target.zero? ? 0 : (hours / target * 100).round
+  # unpaid_hours: what the month's unpaid days (unpaid leave, absent) would have been worth; they are logged,
+  # but neither owed nor billed, so progress is measured against billable_target.
+  Month = Struct.new(:month, :weekdays, :hours, :entries, :days_logged, :weekdays_logged, :holidays, :target,
+                     :unpaid_days, :unpaid_hours, keyword_init: true) do
+    def billable_target = [ target - unpaid_hours, 0 ].max
+    def complete? = hours.round(2) >= billable_target.round(2)
+    def remaining = [ (billable_target - hours).round(2), 0 ].max
+    def percent = billable_target.zero? ? 0 : (hours / billable_target * 100).round
     def holiday_days = holidays.values.sum
     def label = month.strftime("%b %Y")
   end
@@ -23,11 +22,16 @@ class TimeStats
     def weekend? = date.on_weekend?
   end
 
-  def self.holiday_kind(todo)
-    HOLIDAY_KINDS.find { |_, _, pattern| todo.to_s.match?(pattern) }&.first
-  end
+  def self.holiday_kind(todo) = DayKind.for(todo)&.key
 
-  def self.holiday_label(kind) = HOLIDAY_KINDS.find { |k, _, _| k == kind }&.second
+  # A day's kind from its todos: :unpaid only when every todo is unbillable; otherwise the first billable
+  # holiday/leave kind (a day with work and an "absent" note is still billed), or nil for a normal day.
+  def self.day_kind(todos)
+    return nil if todos.empty?
+    return :unpaid if todos.none? { |todo| DayKind.billable?(todo) }
+    todos.filter_map { |todo| DayKind.for(todo) }.find(&:billable)&.key
+  end
+  def self.holiday_label(kind) = kind && DayKind[kind].label
 
   attr_reader :user, :today
 
@@ -46,6 +50,7 @@ class TimeStats
     month_list(first, last).map do |month|
       entries = by_month.fetch(month, [])
       dates = entries.map(&:first).uniq
+      unpaid = DayKind.unpaid_dates(entries.map { |date, _, todo| [ date, todo ] }).reject(&:on_weekend?)
       Month.new(
         month: month,
         weekdays: TimeEntry.weekdays_in_month(month),
@@ -54,7 +59,9 @@ class TimeStats
         days_logged: dates.size,
         weekdays_logged: dates.count { |d| !d.on_weekend? },
         holidays: holiday_days(entries),
-        target: user.month_capacity(month)
+        target: user.month_capacity(month),
+        unpaid_days: unpaid.size,
+        unpaid_hours: unpaid.sum { |d| user.daily_hours_for(d) }.to_d
       )
     end
   end
@@ -71,14 +78,12 @@ class TimeStats
     (from..to).map do |date|
       day = rows.fetch(date, [])
       Day.new(date: date, hours: day.sum { |_, h, _| h }.to_d, entries: day.size,
-              holiday: day.filter_map { |_, _, todo| self.class.holiday_kind(todo) }.first)
+              holiday: self.class.day_kind(day.map(&:third)))
     end
   end
 
-  # Hours that should be logged by the end of today for the month to be on track.
-  def expected_to_date
-    (today.beginning_of_month..today).sum { |d| user.daily_hours_for(d) }
-  end
+  # Hours that should be logged by the end of today for the month to be on track (unpaid days aren't owed).
+  def expected_to_date = expected_between(today.beginning_of_month, today)
 
   # Weekdays before today, this month, with nothing logged.
   def missed_weekdays
@@ -139,7 +144,8 @@ class TimeStats
     def days_logged = days.count { |d| d.entries.positive? }
     def weekdays = days.count { |d| !d.weekend? }
     def weekdays_logged = days.count { |d| !d.weekend? && d.entries.positive? }
-    def holiday_days = days.count(&:holiday)
+    def holiday_days = days.count { |d| d.holiday && d.holiday != :unpaid }
+    def unpaid_days = days.count { |d| d.holiday == :unpaid }
   end
 
   Bucket = Struct.new(:from, :to, :hours, :entries, :days_logged, keyword_init: true)
@@ -150,7 +156,7 @@ class TimeStats
     days = (from..to).map do |date|
       day = by_date.fetch(date, [])
       Day.new(date: date, hours: day.sum { |_, h, _| h }.to_d, entries: day.size,
-              holiday: day.filter_map { |_, _, todo| self.class.holiday_kind(todo) }.first)
+              holiday: self.class.day_kind(day.map(&:third)))
     end
 
     span = (to - from).to_i + 1
@@ -176,11 +182,13 @@ class TimeStats
     )
   end
 
-  # Hours that should have been logged in `from`..`to`, counting only days up to today.
+  # Hours that should have been logged in `from`..`to`, counting only days up to today and leaving out
+  # unpaid days (unpaid leave, absent).
   def expected_between(from, to)
     last = [ to, today ].min
     return 0.to_d if last < from
-    (from..last).sum { |d| user.daily_hours_for(d) }
+    unpaid = user.unpaid_weekdays(from, last)
+    (from..last).sum { |d| unpaid.include?(d) ? 0 : user.daily_hours_for(d) }
   end
 
   # Weekdays in `from`..`to`, before today, with nothing logged.
@@ -203,11 +211,11 @@ class TimeStats
     list
   end
 
-  # Days per holiday kind; a day counts once even if it has several entries.
+  # Days per holiday/leave kind (see .day_kind); a day counts once even if it has several entries.
   def holiday_days(entries)
     counts = HOLIDAY_KINDS.to_h { |kind, _, _| [ kind, 0 ] }
     entries.group_by(&:first).each_value do |day|
-      kind = day.filter_map { |_, _, todo| self.class.holiday_kind(todo) }.first
+      kind = self.class.day_kind(day.map(&:third))
       counts[kind] += 1 if kind
     end
     counts

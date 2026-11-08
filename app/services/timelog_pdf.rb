@@ -91,7 +91,7 @@ class TimelogPdf
 
   def entries_table(pdf)
     body = @entries.each_with_index.map do |e, i|
-      [(i + 1).to_s, e.log_date.strftime("%A, %B %-d, %Y"), e.todo, format("%.2f", e.hours), ""]
+      [(i + 1).to_s, e.log_date.strftime("%A, %B %-d, %Y"), e.todo, format("%.2f", e.hours), remark(e)]
     end
     body += Array.new([MIN_ROWS - body.size, 0].max) { Array.new(HEADERS.size, " ") } if @style.classic?
     rows = [HEADERS] + body + [["", "", "TOTAL", format("%.2f", @entries.sum(&:hours)), ""]]
@@ -158,6 +158,13 @@ class TimelogPdf
       t.row(-1).border_top_color = style.strong
       t.column(3).align = :center
     end
+  end
+
+  # NOTES column: marks leave and unpaid days (see DayKind).
+  def remark(entry)
+    kind = entry.day_kind
+    return "" unless kind
+    kind.billable ? kind.label : "Unpaid - not billable"
   end
 
   def title

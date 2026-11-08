@@ -8,6 +8,7 @@
 <label>Currency (ISO code) <%= f.text_field :currency, maxlength: 3, required: true %></label>
 <label title="Used for new invoices; you can change it each time you generate one">Default tax rate (%) <%= f.number_field :tax_rate, min: 0, max: 100, step: 0.01, required: true %></label>
 <label title="Invoices are due on this day of the month after the billed month">Invoice due day (next month) <%= f.number_field :invoice_due_day, min: 1, max: 31, step: 1, required: true %></label>
+<%= render "invoices/hours_basis_fields", name: "user[invoice_hours_basis]", selected: f.object.invoice_hours_basis, user: f.object, default: true %>
 <h3>Bank details</h3>
 <label>Account name <%= f.text_field :bank_account_name, required: true %></label>
 <label>Account number <%= f.text_field :bank_account_number, required: true %></label>

@@ -29,7 +29,7 @@
   </section>
 
   <section class="card">
-    <h2>Holidays <small>days logged, this month + last 3 months</small></h2>
+    <h2>Holidays &amp; leave <small>days logged, this month + last 3 months</small></h2>
     <% kinds = TimeStats::HOLIDAY_KINDS.map { |kind, label, _| [ kind, label, holiday_tone(kind) ] } %>
     <% top = [ holiday_months.map(&:holiday_days).max, 1 ].max %>
     <div class="chart-legend">
@@ -49,15 +49,15 @@
         </div>
       <% end %>
     </div>
-    <div class="mini-table-wrap"><table class="mini-table">
-      <thead><tr><th>Month</th><% kinds.each do |kind, label, _| %><th class="num"><span class="th-long"><%= label %></span><span class="th-short" aria-hidden="true"><%= { public: "Public", non_working: "Non-work.", holiday: "Other" }[kind] %></span></th><% end %><th class="num">Total</th></tr></thead>
+    <div class="mini-table-wrap"><table class="mini-table holiday-table">
+      <thead><tr><th>Month</th><% kinds.each do |kind, label, _| %><th class="num" title="<%= label %>"><span class="th-long"><%= { public: "Public", non_working: "Non-working", holiday: "Holiday", paid_leave: "Paid leave", unpaid: "Unpaid" }[kind] %></span><span class="th-short" aria-hidden="true"><%= { public: "Pub.", non_working: "N-W", holiday: "Hol.", paid_leave: "Leave", unpaid: "Unpd." }[kind] %></span></th><% end %><th class="num">Total</th></tr></thead>
       <tbody>
         <% holiday_months.reverse_each do |m| %>
-          <tr><td><%= m.label %></td><% kinds.each do |kind, _, _| %><td class="num"><%= m.holidays[kind] %></td><% end %><td class="num"><strong><%= m.holiday_days %></strong></td></tr>
+          <tr><td><span class="th-long"><%= m.label %></span><span class="th-short" aria-hidden="true"><%= m.month.strftime("%b '%y") %></span></td><% kinds.each do |kind, _, _| %><td class="num"><%= m.holidays[kind] %></td><% end %><td class="num"><strong><%= m.holiday_days %></strong></td></tr>
         <% end %>
       </tbody>
       <tfoot><tr><td>Total</td><% kinds.each do |kind, _, _| %><td class="num"><%= holiday_months.sum { |m| m.holidays[kind] } %></td><% end %><td class="num"><%= holiday_months.sum(&:holiday_days) %></td></tr></tfoot>
     </table></div>
-    <p class="muted chart-note">Counted from logs whose todo mentions “public holiday”, “non-working”, or “holiday”. A day counts once.</p>
+    <p class="muted chart-note">Counted from the todo wording: holidays and paid leave (“paid holiday”, “on vacation”, “sick leave”…) count as full working days; unpaid days (“absent”, “unpaid sick leave”…) are logged at 0h and not billed. A day counts once.</p>
   </section>
 </div>

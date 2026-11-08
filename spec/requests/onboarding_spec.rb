@@ -22,6 +22,14 @@ RSpec.describe "Onboarding" do
     expect(response.body).not_to include("aside class=\"sidebar\"")
   end
 
+  it "offers the default hours to bill, starting from time logs" do
+    get onboarding_path
+    html = Nokogiri::HTML(response.body)
+    expect(html.at_css("input[name='user[invoice_hours_basis]'][checked]")["value"]).to eq("logged")
+    patch onboarding_path(step: "invoice"), params: { user: details.merge(invoice_hours_basis: "target") }
+    expect(user.reload.invoice_hours_basis).to eq("target")
+  end
+
   it "requires every invoice field" do
     patch onboarding_path(step: "invoice"), params: { user: details.merge(address: "", bank_swift: "") }
     expect(response).to have_http_status(:unprocessable_content)

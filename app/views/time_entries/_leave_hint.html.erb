@@ -1,0 +1,7 @@
+<%# Which todo wording counts as paid leave (a full working day) or unpaid (0h, not billed). See DayKind. %>
+<details class="leave-hint">
+  <summary>Logging holidays and leave</summary>
+  <p><strong>Paid, counts as a full working day:</strong> <%= safe_join(DayKind::PAID_EXAMPLES.map { |w| tag.code(w) }, ", ") %>, or a public / regular / non-working holiday.</p>
+  <p><strong>Unpaid, logged at 0h and not billed:</strong> <%= safe_join(DayKind::UNPAID_EXAMPLES.map { |w| tag.code(w) }, ", ") %>.</p>
+  <p class="muted">The wording can appear anywhere in the todo, e.g. “Sick leave - flu” or “Absent (family matter)”.</p>
+</details>

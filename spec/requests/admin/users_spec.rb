@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Admin users" do
-  let(:user) { create(:user, name: "Jamie Rivera", bank_account_number: "0012345678", bank_swift: "BNORPHMM") }
+  let(:user) { create(:user, :fixed_rate, name: "Jamie Rivera", bank_account_number: "0012345678", bank_swift: "BNORPHMM") }
   let(:admin) { create(:administrator, :super) }
 
   before { admin_sign_in(admin) }
@@ -165,7 +165,7 @@ RSpec.describe "Admin users" do
       invoice = user.invoices.last
       expect(invoice).to have_attributes(tax_rate: 0, amount: 163_000)
       get admin_user_invoices_path(user)
-      expect(response.body).to include("+ 1 extra item", "PHP 163,000.00")
+      expect(response.body).to include("1 extra item", "PHP 163,000.00")
     end
 
     it "previews and generates with a design and colour" do
@@ -180,6 +180,16 @@ RSpec.describe "Admin users" do
       expect(TimelogPdf).to receive(:new).with(anything, user, style: have_attributes(design: "modern", color: "0F766E")).and_call_original
       get export_admin_user_time_entries_path(user, period: "month", design: "modern", color: "#0f766e")
       expect(response.media_type).to eq("application/pdf")
+    end
+
+    it "generates with the same hours rules as the app, and saves the user's default" do
+      create(:time_entry, user:, log_date: Date.new(2026, 10, 1))
+      post admin_user_invoices_path(user), params: { period: "2026-10", hours_basis: "logged" }
+      admin_invoice = user.invoices.last
+      expected = Invoice.preview_for_range(user, Date.new(2026, 10, 1), Date.new(2026, 10, 31), hours_basis: "logged")
+      expect(admin_invoice).to have_attributes(hours_basis: "logged", hours: expected.hours)
+      patch admin_user_path(user), params: { user: { invoice_hours_basis: "logged" } }
+      expect(user.reload.invoice_hours_basis).to eq("logged")
     end
 
     it "saves a user's default tax rate" do

@@ -145,7 +145,7 @@ RSpec.describe User do
     end
 
     it "keeps stored invoice hours when the settings change" do
-      user = create(:user, :invoice_ready)
+      user = create(:user, :fixed_rate)
       invoice = Invoice.generate_for(user, Date.new(2026, 10, 1))
       user.update!(monthly_hours: 100)
       expect(invoice.reload.hours).to eq(160)
@@ -199,7 +199,7 @@ RSpec.describe User do
   end
 
   it "deletes its sessions, entries, and invoices with it" do
-    user = create(:user, :invoice_ready)
+    user = create(:user, :fixed_rate)
     create(:session, user:)
     create(:time_entry, user:)
     Invoice.generate_for(user, Date.new(2026, 10, 1))

@@ -17,7 +17,9 @@
     </label>
     <label data-report-period-target="field" data-periods="custom" hidden>From <%= date_field_tag :from, @month %></label>
     <label data-report-period-target="field" data-periods="custom" hidden>To <%= date_field_tag :to, @month.end_of_month %></label>
-    <%= render "shared/pdf_style_fields", kind: :report, style: @user.report_style, design_name: :design, color_name: :color %>
+    <%= render layout: "shared/customize", locals: { hint: "PDF design and header colour" } do %>
+      <%= render "shared/pdf_style_fields", kind: :report, style: @user.report_style, design_name: :design, color_name: :color %>
+    <% end %>
     <div class="export-actions">
       <%= button_tag "Preview PDF", type: "button", class: "btn btn-secondary",
             data: { action: "pdf-preview#open", pdf_preview_url_param: export_admin_user_time_entries_path(@user), pdf_preview_title_param: "Timelog · #{@user.name}" } %>

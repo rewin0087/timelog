@@ -1,0 +1,15 @@
+<%# Collapsible "Customize" section for optional generate/export settings. Fields inside are always submitted,
+    so leaving it closed uses the defaults. A "Customized" badge shows when anything inside differs from how the
+    page loaded. Use with `render layout: "shared/customize", locals: { hint: "...", open: false }`. %>
+<details class="customize" data-controller="customize" data-action="input->customize#check change->customize#check" <%= "open" if local_assigns[:open] %>>
+  <summary>
+    <span class="customize-icon" aria-hidden="true">⚙</span>
+    <span class="customize-title">Customize</span>
+    <span class="customize-hint"><%= hint %></span>
+    <span class="badge badge-info customize-badge" data-customize-target="badge" hidden>Customized</span>
+    <span class="customize-chevron" aria-hidden="true">›</span>
+  </summary>
+  <div class="customize-body">
+    <%= yield %>
+  </div>
+</details>

@@ -7,5 +7,6 @@
   <p class="muted">Hours are calculated automatically from the date:
     <% if Current.user.fixed_target? %><%= fmt_hours(Current.user.monthly_target) %> ÷ weekdays in that month = one day<% else %><%= User::DAILY_HOURS %>h per weekday<% end %>,
     shared by that day's todos; weekends get 0. Change this in your <%= link_to "profile", edit_profile_path %>.</p>
+  <%= render "time_entries/leave_hint" %>
   <div class="form-actions"><%= f.submit %> <%= link_to "Cancel", time_entries_path, class: "btn btn-secondary" %></div>
 <% end %>

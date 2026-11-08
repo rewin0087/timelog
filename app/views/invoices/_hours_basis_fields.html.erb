@@ -1,0 +1,17 @@
+<%# "Hours to bill" choice (Invoice::HOURS_BASES), shared by the Generate invoice form and the account default.
+    Locals: name (field name), selected ("logged" or "target"), user, default (true for the account setting). %>
+<% target = user.fixed_target? ? fmt_hours(user.monthly_target) : "#{User::DEFAULT_MONTHLY_HOURS}h" %>
+<fieldset class="hours-basis">
+  <legend><%= local_assigns[:default] ? "Hours to bill (default)" : "Hours to bill" %></legend>
+  <label class="choice">
+    <%= radio_button_tag name, "logged", selected != "target", id: nil %>
+    <span><strong>From time logs</strong><small>Bills the billable hours logged in the period. Unpaid leave, absent days, and days with nothing logged aren't billed.</small></span>
+  </label>
+  <label class="choice">
+    <%= radio_button_tag name, "target", selected == "target", id: nil %>
+    <span><strong>Fixed monthly rate (skip time logs)</strong><small>Bills the <%= target %> monthly target prorated by the weekdays in the period, whatever was logged.</small></span>
+  </label>
+  <% if local_assigns[:default] %>
+    <p class="muted">Applies with a fixed monthly target; you can still change it each time you generate an invoice. Without a monthly target, invoices always bill the hours you logged.</p>
+  <% end %>
+</fieldset>

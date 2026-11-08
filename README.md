@@ -61,7 +61,23 @@ Protects a signed-in session from anyone else at the same device.
 - The activity list can be shown as a **Table** or a **Timeline** (one node per day with its todos and hours, today highlighted). The choice (`?display=table|timeline`) is remembered for the session.
 - **This month's progress:** hours logged vs the target, hours left to log, activities logged, missed weekdays, a meter with an "expected by today" marker, and a per-day hours chart (logged, holiday, missed, still to log).
 - **Last 3 months:** hours logged per month against the target, with each month's weekday count, logged weekdays, and whether it reached the target.
-- **Holidays:** days logged as public holidays, non-working holidays, or other holidays, for this month and the last 3. There is no holiday field: a day counts when one of its todos mentions "public/regular/national holiday", "non-working", or "holiday" (checked in that order, see `TimeStats::HOLIDAY_KINDS`).
+- **Holidays & leave:** days logged as public holidays, non-working holidays, other holidays, paid leave, or unpaid days, for this month and the last 3 (see [Holidays and leave](#holidays-and-leave)).
+
+### Holidays and leave
+
+There is no holiday or leave field: the todo's wording decides the kind (`DayKind`, checked in this order, case-insensitive, anywhere in the todo):
+
+| Kind | Wording | Hours and billing |
+| --- | --- | --- |
+| Unpaid / absent | "Absent", "Unpaid sick leave", "Unpaid vacation (leave)", "Unpaid holiday", "Unpaid leave" | Logged at **0h** and never billed. The day still counts as logged, so it isn't "missed". |
+| Public holiday | "Public / Regular / National holiday" | A full working day, billed |
+| Non-working holiday | "Non-working" | A full working day, billed |
+| Paid leave | "Paid holiday", "On vacation", "Sick leave", "Paid sick leave", "Paid vacation leave", "Vacation leave", "Paid leave" | A full working day, billed |
+| Holiday | any other "holiday" | A full working day, billed |
+
+- A day is unpaid only when **all** of its todos are unpaid; a day with work and an "absent" note is still a working day (the unpaid todo gets 0h and the others share the day).
+- Unpaid weekdays aren't owed: they come off the month's target for progress, "hours left", and "expected by today" (`TimeStats::Month#billable_target`), and invoices from time logs don't bill them. An invoice at the fixed monthly rate skips time logs, so it doesn't deduct them.
+- Charts colour each kind (unpaid days are hatched grey), the timesheet PDF notes them in the NOTES/REMARKS column ("Paid leave", "Unpaid - not billable"), and the log forms list the wording under "Logging holidays and leave".
 
 ### Verse of the day and daily trivia
 
@@ -91,14 +107,15 @@ Preview and download a timesheet PDF (COUNT / DATE / TASK DONE / HOURS WORKED / 
 | Last N weeks | `period=weeks&count=N` |
 | Custom range | `period=custom&from=YYYY-MM-DD&to=YYYY-MM-DD` |
 
-`N` is clamped to 1–366. Add `inline=1` to `/reports/export` to open the PDF in the browser instead of downloading it. Pick the [PDF design and colour](#pdf-designs-and-colours) with `design=` and `color=`.
+`N` is clamped to 1–366. Add `inline=1` to `/reports/export` to open the PDF in the browser instead of downloading it. Pick the [PDF design and colour](#pdf-designs-and-colours) with `design=` and `color=` (under **Customize** on the form, which also applies to the admin timesheet export).
 
 When the period has logs, an overview sits above the entries: hours logged vs expected, activities, weekdays logged, missed weekdays, hours per day (per week up to 26 weeks, per month beyond), activities by weekday, and the most logged tasks.
 
 ### Invoices (`/invoices`)
 
 - Charts at the top: invoice count, hours billed, amount billed this year and per month (masked until you press an eye button), billed vs logged hours per month, and a 12-month invoice timeline with the next due date. The amount chart has no value axis, so amounts stay hidden.
-- **Generate invoice** is one form: pick a month (the last 12 are listed; the default is the latest finished month) or **Custom dates…** (a range within one month, with its own due date). The custom range is prefilled with the first day of the current month that hasn't been invoiced yet.
+- **Generate invoice** is one form. Only the period is shown up front; the optional settings below (hours to bill, extra items, tax, PDF style) sit in a collapsible **Customize** section, which is submitted with its defaults when left closed and shows a "Customized" badge when anything in it was changed (`shared/_customize`). Pick a month (the last 12 are listed; the default is the latest finished month) or **Custom dates…** (a range within one month, with its own due date). The custom range is prefilled with the first day of the current month that hasn't been invoiced yet.
+- **Hours to bill** (fixed monthly target only): **From time logs** bills the billable hours logged in the period (unpaid leave, absent days, and days with nothing logged add nothing), or **Fixed monthly rate (skip time logs)** bills the target prorated by the period's weekdays, whatever was logged. The form starts with the account default ("Hours to bill (default)" in the invoice details and onboarding, from time logs unless changed). Without a monthly target the choice is hidden and invoices always bill the hours logged. The invoice stores the basis it used (`invoices.hours_basis`).
 - **Extra items (optional):** up to 8 extra lines (description, quantity, rate), e.g. reimbursements or allowances, on top of the hours charge.
 - **Tax rate:** prefilled from the profile's default tax rate (0 unless set) and can be changed per invoice.
 - **PDF style:** a [design and colour](#pdf-designs-and-colours), defaulting to the profile's invoice style. The invoice stores the style it was generated with.
@@ -127,7 +144,7 @@ Timesheets and invoices can be generated in three designs (`PdfStyle::DESIGNS`),
 Separate forms, each saved on its own:
 
 - **Profile:** name, address (printed at the top of invoices), and working hours (fixed monthly target or no target, see below).
-- **Invoice details:** client (bill to) name and address, invoice item (default "Consultancy Service"), hourly rate, currency (default `PHP`), default tax rate (default 0%), invoice due day (1–31, default 5), bank details (account name, number, bank name, SWIFT), and PDF style defaults. Address, client, hourly rate, and bank fields are required.
+- **Invoice details:** client (bill to) name and address, invoice item (default "Consultancy Service"), hourly rate, currency (default `PHP`), default tax rate (default 0%), default hours to bill (from time logs or fixed monthly rate), invoice due day (1–31, default 5), bank details (account name, number, bank name, SWIFT), and PDF style defaults. Address, client, hourly rate, and bank fields are required.
 - **Lock screen:** change the code or auto-lock period (needs the current code or account password).
 - **Password:** change the account password (needs the current password). Other signed-in devices are signed out.
 
@@ -167,20 +184,21 @@ Hours are **not** entered by hand. Each user picks one of two rules under **Work
 **Fixed monthly target** (default). The month's target, 160h unless the user sets their own (`users.monthly_hours`), is spread over its weekdays:
 
 - **Per day:** target ÷ the number of weekdays in that month. With 160h, 20 weekdays gives 8h/day, 21 gives 7.62h, and 22 gives 7.27h. Weekends carry 0 hours.
-- **Invoices:** bill the target prorated by the weekdays in the invoiced range, whatever has actually been logged. A full month always bills the full target.
+- **Invoices:** by default, bill the billable hours logged in the range (so a fully logged month with no unpaid days bills the full target). Choosing the fixed monthly rate instead bills the target prorated by the weekdays in the range, skipping time logs (see [Invoices](#invoices-invoices)). Either way, an invoice from time logs with nothing billable logged is refused.
 
 **No monthly target** (`hours_mode = "daily"`). There is no monthly limit; each day is capped at 8h (`User::DAILY_HOURS`):
 
 - **Per day:** every logged weekday counts 8h. Weekends carry 0 hours.
 - **Invoices:** bill the hours actually logged in the range. An invoice for a range with nothing logged is refused.
 
-In both modes a day's hours are split equally between that day's entries, and adding, moving, or deleting an entry rebalances the day. Changing the rule or the target recalculates the hours on all existing entries; invoices already generated keep their hours until they are generated again.
+In both modes a day's hours are split equally between that day's billable entries (unpaid leave and absent entries get 0h, see [Holidays and leave](#holidays-and-leave)), and adding, moving, or deleting an entry rebalances the day. Changing the rule or the target recalculates the hours on all existing entries; invoices already generated keep their hours until they are generated again.
 
 ## Project layout
 
 | Path | Purpose |
 | --- | --- |
 | `app/models/time_entry.rb` | Entries and the daily hour-splitting logic |
+| `app/models/day_kind.rb` | Holiday and leave kinds from the todo wording, and which are billable |
 | `app/models/invoice.rb` | Invoice generation and draft previews, numbering, totals, validations |
 | `app/models/invoice_item.rb` | Extra invoice lines (description, quantity, rate) |
 | `app/models/user.rb` | Account, profile, required invoice details, onboarding state, PDF style defaults |
@@ -223,14 +241,14 @@ RSpec, with FactoryBot, Capybara + [Cuprite](https://github.com/rubycdp/cuprite)
 
 | Path | Covers |
 | --- | --- |
-| `spec/models` | Validations, lock codes, sessions and auto-lock, hour balancing, invoice generation and totals, PDF styles, administrator access levels, daily inspiration and its fallback |
+| `spec/models` | Validations, lock codes, sessions and auto-lock, hour balancing, holiday and leave kinds (paid vs unpaid), invoice generation and totals, PDF styles, administrator access levels, daily inspiration and its fallback |
 | `spec/services` | Report periods, timesheet and invoice PDF contents and colours in each design, FuelIX client, chart and range statistics |
 | `spec/helpers` | Chart helpers (ticks, percentages, hour/money formatting, masking) |
 | `spec/requests` | Every endpoint: sign in/up/out, onboarding, screen lock, lock settings and password, profile forms, skins, dashboard, logs, reports, invoices (extra items, tax, styles, draft preview), other users' data |
 | `spec/requests/admin` | Admin sign-in, permissions per access level, dashboard, users, timelogs, export, invoices, masking, administrators, skin |
 | `spec/system` | Browser flows: onboarding, quick add, logs CRUD, report period fields and PDF preview, invoices (masking, custom dates with extra items, draft preview with a style), lock screen keypad and shortcut, skins, trivia, mobile layout |
 
-- The factory's default user is fully onboarded (invoice details and a lock code). Use the `:without_lock`, `:without_invoice_details`, or `:new_signup` traits for users still onboarding.
+- The factory's default user is fully onboarded (invoice details and a lock code) and bills from time logs. Use `:fixed_rate` for a user whose invoices bill the fixed monthly rate, and `:without_lock`, `:without_invoice_details`, or `:new_signup` for users still onboarding.
 - `pdf_text` and `pdf_colors` (in `spec/support/pdf_helpers.rb`) read a PDF's text and the hex colours it uses.
 - Every example runs at a fixed time (Friday 13 November 2026, 10:00). Tag an example with `at: Time.zone.local(...)` to change it.
 - Tests never call FuelIX: `FUELIX_API_KEY` is cleared and outside network access is blocked; stub it with the helpers in `spec/support/fuelix_helpers.rb`.

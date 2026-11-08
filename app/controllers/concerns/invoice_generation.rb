@@ -4,6 +4,8 @@
 #   items[n][description|quantity|rate] -> optional extra lines (fully blank rows are ignored)
 #   tax_rate                -> percent; blank uses the user's default
 #   design, color           -> PDF look; blank uses the user's invoice defaults
+#   hours_basis             -> logged | target (fixed rate, skip time logs); blank uses the user's default,
+#                              and users without a monthly target always bill logged hours
 module InvoiceGeneration
   extend ActiveSupport::Concern
 
@@ -48,7 +50,8 @@ module InvoiceGeneration
     end
 
     def invoice_options
-      { items: extra_invoice_items, tax_rate: params[:tax_rate].presence, design: params[:design].presence, color: params[:color].presence }
+      { items: extra_invoice_items, tax_rate: params[:tax_rate].presence, design: params[:design].presence,
+        color: params[:color].presence, hours_basis: params[:hours_basis].presence }
     end
 
     def extra_invoice_items

@@ -16,6 +16,7 @@ class User < ApplicationRecord
   DEFAULT_INVOICE_ITEM = "Consultancy Service"
   validates :invoice_item, presence: true, length: { maximum: 40 }
   validates :tax_rate, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
+  validates :invoice_hours_basis, inclusion: { in: %w[logged target] }
   validates :report_design, :invoice_design, inclusion: { in: PdfStyle::DESIGNS.keys }, allow_blank: true
   validates :report_color, :invoice_color, format: { with: PdfStyle::HEX, message: "must be a hex colour like #FBE3D6" }, allow_blank: true
   normalizes :report_color, :invoice_color, with: ->(c) { PdfStyle.normalize_color(c) }
@@ -62,9 +63,12 @@ class User < ApplicationRecord
 
   # Re-splits every logged day with the current hours settings.
   def rebalance_time_entries!
-    time_entries.group(:log_date).count.each do |date, count|
-      time_entries.where(log_date: date).update_all(hours: daily_hours_for(date) / count)
-    end
+    time_entries.distinct.pluck(:log_date).each { |date| TimeEntry.rebalance_day(self, date) }
+  end
+
+  # Weekdays in `from`..`to` logged only as unpaid leave or absent (see DayKind): never billed.
+  def unpaid_weekdays(from, to)
+    DayKind.unpaid_dates(time_entries.where(log_date: from..to).pluck(:log_date, :todo)).reject(&:on_weekend?).sort
   end
 
   # Account defaults for generated PDFs.

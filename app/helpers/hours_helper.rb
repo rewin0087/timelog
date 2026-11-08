@@ -20,6 +20,6 @@ module HoursHelper
 
   # Status badge text for a finished month.
   def month_complete_label(user, month)
-    user.fixed_target? ? "✓ #{fmt_hours(month.target)} complete" : "✓ Every weekday logged"
+    user.fixed_target? ? "✓ #{fmt_hours(month.billable_target)} complete" : "✓ Every weekday logged"
   end
 end

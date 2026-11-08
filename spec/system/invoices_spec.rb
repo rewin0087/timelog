@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Invoices" do
-  let(:user) { create(:user, :invoice_ready, hourly_rate: 1000) }
+  let(:user) { create(:user, :fixed_rate, hourly_rate: 1000) }
 
   it "generates a month invoice" do
     sign_in_ui(user)
@@ -15,11 +15,13 @@ RSpec.describe "Invoices" do
   it "generates a custom-range invoice with extra items and tax", :js do
     sign_in_ui(user)
     click_on "Invoices"
-    expect(page).to have_no_field("From")
+    expect(page).to have_no_field("From", exact: true)
     select "Custom dates…", from: "period"
-    fill_in "From", with: "2026-11-02"
+    fill_in "From", exact: true, with: "2026-11-02"
     fill_in "To", with: "2026-11-06"
     fill_in "Due", with: "2026-11-20"
+    expect(page).to have_no_field("Tax rate (%)")
+    find("summary", text: "Customize").click
     fill_in "Tax rate (%)", with: "10"
 
     click_on "+ Add item"
@@ -35,7 +37,7 @@ RSpec.describe "Invoices" do
 
     click_on "Generate invoice"
     expect(page).to have_content("Invoice INV-001 for 2–6 November 2026 generated with 1 extra item and 10% tax.")
-    within("table.rtable") { expect(page).to have_content("(custom)").and have_content("+ 1 extra item · 10% tax") }
+    within("table.rtable") { expect(page).to have_content("(custom)").and have_content("+ fixed rate · 1 extra item · 10% tax") }
     expect(user.invoices.last.amount).to eq(47_410) # (5 of 21 weekdays x 160h x 1,000 = 38,100 + 5,000) + 10%
   end
 
@@ -74,12 +76,37 @@ RSpec.describe "Invoices" do
       end
     end
 
+    it "generates with the defaults when Customize stays closed, and opens it for an unfinished extra item" do
+      sign_in_ui(user)
+      click_on "Invoices"
+      find("summary", text: "Customize").click
+      click_on "+ Add item"
+      expect(page).to have_css(".customize-badge", visible: :visible)
+      find("summary", text: "Customize").click # close it with the empty item inside
+      expect(page).to have_css("details.customize:not([open])")
+      click_on "Generate invoice"
+      expect(page).to have_css("details.customize[open]")
+      expect(user.invoices.count).to eq(1)
+
+      find("button[aria-label='Remove item']").click
+      expect(page).to have_no_css(".customize-badge", visible: :visible)
+      find("summary", text: "Customize").click
+      select "November 2026", from: "period"
+      click_on "Generate invoice"
+      expect(page).to have_content("Invoice INV-002 for November 2026 generated.")
+      expect(user.invoices.last).to have_attributes(tax_rate: 0, design: "classic", hours_basis: "target")
+    end
+
     it "previews a draft invoice with the picked design and colour before generating" do
       sign_in_ui(user)
       click_on "Invoices"
+      expect(page).to have_css("details.customize:not([open])")
+      expect(page).to have_no_css(".customize-badge", visible: :visible)
+      find("summary", text: "Customize").click
       select "Modern: full-width colour header, striped rows", from: "Design"
       find(".pdf-swatch[title='Teal']").click
       expect(page).to have_css(".pdf-swatch.active[title='Teal']")
+      expect(page).to have_css(".customize-badge", text: "Customized", visible: :visible)
       click_on "Preview PDF"
       within("dialog.pdf-modal[open]") do
         expect(page).to have_content("Invoice preview (not saved yet)")
