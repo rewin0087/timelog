@@ -6,10 +6,10 @@ RSpec.describe "Screen lock" do
   context "without a lock code" do
     let(:user) { create(:user, :without_lock) }
 
-    it "sends every page to lock setup" do
+    it "sends every page to onboarding" do
       sign_in(user)
       get time_entries_path
-      expect(response).to redirect_to(edit_lock_settings_path)
+      expect(response).to redirect_to(onboarding_path)
     end
 
     it "answers non-HTML requests with 423" do

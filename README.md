@@ -86,7 +86,7 @@ Preview and download a PDF timelog (COUNT / DATE / TASK DONE / HOURS WORKED / NO
 - The custom range is prefilled with the first day of the current month that hasn't been invoiced yet, so a partial invoice is easy to follow up.
 - Invoices are numbered per user (`INV-001`, `INV-002`, …). Regenerating the same period refreshes the existing invoice instead of creating a new one. Overlapping periods are rejected.
 - The invoice is dated the last day of the period and is due on your configured due day of the following month (capped at that month's last day).
-- PDFs are US Letter. The "Bill to" block is fixed in `InvoicePdf::BILL_TO` (`app/services/invoice_pdf.rb`).
+- PDFs are US Letter. The "Bill to" block comes from the client name and address on the profile (up to 4 address lines are printed).
 
 ### Profile (`/profile/edit`)
 

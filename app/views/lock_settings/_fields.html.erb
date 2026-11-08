@@ -1,0 +1,17 @@
+<%# Lock code and auto-lock fields. setup: true during onboarding (code required, no current secret). %>
+<% unless setup %>
+  <label>Current lock code or account password
+    <%= password_field_tag :current_secret, nil, required: true, autocomplete: "current-password" %>
+  </label>
+<% end %>
+<label><%= setup ? "Lock code" : "New lock code (leave blank to keep)" %>
+  <%= f.password_field :lock_pin, required: setup, inputmode: "numeric", pattern: "[0-9]{4,8}", minlength: 4, maxlength: 8,
+        autocomplete: "new-password", autofocus: setup, title: "4 to 8 digits" %>
+</label>
+<label>Confirm lock code
+  <%= f.password_field :lock_pin_confirmation, required: setup, inputmode: "numeric", pattern: "[0-9]{4,8}", maxlength: 8, autocomplete: "new-password" %>
+</label>
+<label>Lock automatically after inactivity
+  <%= f.select :auto_lock_minutes, User::AUTO_LOCK_OPTIONS %>
+</label>
+<p class="muted">Lock by hand any time with the 🔒 button in the sidebar or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>.</p>

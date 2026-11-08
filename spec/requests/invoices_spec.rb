@@ -22,10 +22,10 @@ RSpec.describe "Invoices" do
       expect(Nokogiri::HTML(response.body).at_css("input#from")["value"]).to eq("2026-11-07")
     end
 
-    it "warns when the profile is incomplete" do
+    it "sends users with incomplete invoice details back to onboarding" do
       user.update!(bank_swift: nil, address: nil)
       get invoices_path
-      expect(response.body).to include("Complete your", "Address and SWIFT")
+      expect(response).to redirect_to(onboarding_path)
     end
 
     it "lists invoices with masked amounts and the charts" do
@@ -83,11 +83,10 @@ RSpec.describe "Invoices" do
       expect(flash[:alert]).to eq("Pick a valid month, or a valid date range and due date.")
     end
 
-    it "requires a complete profile" do
+    it "requires complete invoice details" do
       user.update!(hourly_rate: nil)
       expect { post invoices_path, params: { period: "2026-10" } }.not_to change(Invoice, :count)
-      expect(response).to redirect_to(edit_profile_path)
-      expect(flash[:alert]).to include("Hourly rate")
+      expect(response).to redirect_to(onboarding_path)
     end
   end
 

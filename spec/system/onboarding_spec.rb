@@ -1,7 +1,7 @@
 require "rails_helper"
 
 RSpec.describe "Onboarding and sign in" do
-  it "signs up, sets a lock code, fills in the profile, and reaches the dashboard" do
+  it "signs up, fills in invoice details, sets a lock code, and reaches the dashboard" do
     visit new_session_path
     click_on "Sign up"
     fill_in "Full name", with: "Jamie Rivera"
@@ -10,20 +10,37 @@ RSpec.describe "Onboarding and sign in" do
     fill_in "Confirm password", with: "password123"
     click_on "Sign up"
 
+    expect(page).to have_content("Welcome!")
+    expect(page).to have_content("Your invoice details")
+    expect(page).to have_no_css("aside.sidebar")
+    fill_in "Address", with: "1 Main St"
+    fill_in "Client name", with: "Acme Ltd"
+    fill_in "Client address", with: "1 Client Way\nLondon"
+    expect(page).to have_field("Item (shown on the invoice line)", with: "Consultancy Service")
+    fill_in "Item (shown on the invoice line)", with: "Software Development"
+    fill_in "Hourly rate", with: "1000"
+    fill_in "Account name", with: "Jamie Rivera"
+    fill_in "Account number", with: "0012345678"
+    fill_in "Bank name", with: "BDO"
+    fill_in "SWIFT", with: "BNORPHMM"
+    click_on "Continue"
+
     expect(page).to have_content("Set up your lock screen")
     fill_in "Lock code", with: "2580"
     fill_in "Confirm lock code", with: "2580"
     select "15 minutes", from: "Lock automatically after inactivity"
-    click_on "Turn on lock screen"
+    click_on "Finish setup"
 
-    expect(page).to have_content("Lock screen is on")
-    expect(page).to have_content("Profile & invoice details")
-    fill_in "Address", with: "1 Main St"
-    fill_in "Hourly rate", with: "1000"
-    click_on "Save"
-
-    expect(page).to have_content("Profile saved.")
+    expect(page).to have_content("You're all set")
     expect(page).to have_content("Today's todo")
+    expect(User.last).to have_attributes(onboarded?: true, auto_lock_minutes: 15, bank_name: "BDO", bill_to_name: "Acme Ltd", invoice_item: "Software Development")
+  end
+
+  it "can go back from the lock step to the invoice details" do
+    sign_in_onboarding(create(:user, :without_lock))
+    expect(page).to have_content("Set up your lock screen")
+    click_on "Back"
+    expect(page).to have_field("Bank name", with: "BDO")
   end
 
   it "shows sign-up errors" do
@@ -55,11 +72,17 @@ RSpec.describe "Onboarding and sign in" do
     sign_in_ui(user)
     click_on user.name
     expect(page).to have_content("Locks automatically after 5 minutes")
-    click_on "Change lock settings"
     fill_in "Current lock code or account password", with: "2580"
     select "Never", from: "Lock automatically after inactivity"
-    click_on "Save"
+    click_on "Save lock settings"
     expect(page).to have_content("Lock screen settings saved.")
     expect(page).to have_content("Auto-lock is off")
+  end
+
+  def sign_in_onboarding(user)
+    visit new_session_path
+    fill_in "Email", with: user.email_address
+    fill_in "Password", with: "password123"
+    click_on "Sign in"
   end
 end

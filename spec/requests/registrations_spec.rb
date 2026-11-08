@@ -9,16 +9,12 @@ RSpec.describe "Registrations" do
     expect(response.body).to include("Create account")
   end
 
-  it "creates the account, signs in, and goes to the profile" do
+  it "creates the account, signs in, and starts onboarding" do
     expect { post registration_path, params: }.to change(User, :count).by(1).and change(Session, :count).by(1)
-    expect(response).to redirect_to(edit_profile_path)
+    expect(response).to redirect_to(onboarding_path)
     expect(flash[:notice]).to start_with("Welcome!")
-  end
-
-  it "sends a new user without a lock code to lock setup" do
-    post(registration_path, params:)
     follow_redirect!
-    expect(response).to redirect_to(edit_lock_settings_path)
+    expect(response.body).to include("Your invoice details")
   end
 
   it "shows errors for invalid input" do

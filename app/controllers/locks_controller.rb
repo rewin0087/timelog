@@ -4,7 +4,7 @@ class LocksController < ApplicationController
 
   # The lock screen
   def show
-    return redirect_to edit_lock_settings_path unless Current.user.lock_configured?
+    return redirect_to onboarding_path unless Current.user.lock_configured?
     redirect_to after_unlock_url unless Current.session.locked?
   end
 

@@ -1,45 +1,26 @@
 <section class="card">
   <h2>Profile &amp; invoice details</h2>
-  <p class="muted">These details appear on your generated invoices. Signed in as <%= @user.email_address %>.</p>
+  <p class="muted">These details appear on your generated invoices and are all required. Signed in as <%= @user.email_address %>.</p>
   <%= form_with model: @user, url: profile_path, method: :patch, class: "stack" do |f| %>
     <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
-    <label>Full name <%= f.text_field :name, required: true %></label>
-    <label>Address <%= f.text_area :address, rows: 2 %></label>
-    <label>Hourly rate <%= f.number_field :hourly_rate, step: 0.01, min: 0 %></label>
-    <label>Currency (ISO code) <%= f.text_field :currency, maxlength: 3, required: true %></label>
-    <label>Invoice due day (day of the following month) <%= f.number_field :invoice_due_day, min: 1, max: 31, step: 1, required: true %></label>
-    <h3>Working hours</h3>
-    <fieldset class="hours-settings">
-      <legend class="sr-only">How hours are worked out</legend>
-      <label class="choice">
-        <%= f.radio_button :hours_mode, "monthly" %>
-        <span><strong>Fixed monthly target</strong><small>The target is spread over the month's weekdays (160h ÷ 21 weekdays = 7.62h a day) and invoices bill the full target.</small></span>
-      </label>
-      <label class="monthly-field">Monthly target hours (leave blank for <%= User::DEFAULT_MONTHLY_HOURS %>)
-        <%= f.number_field :monthly_hours, step: 0.01, min: 1, max: 744, placeholder: User::DEFAULT_MONTHLY_HOURS %>
-      </label>
-      <label class="choice">
-        <%= f.radio_button :hours_mode, "daily" %>
-        <span><strong>No monthly target</strong><small>Each logged weekday counts <%= User::DAILY_HOURS %>h (the daily cap), with no monthly limit. Invoices bill the hours you logged.</small></span>
-      </label>
-      <p class="muted">Changing this recalculates the hours on all your existing logs. Invoices you already generated keep their hours until you generate them again.</p>
-    </fieldset>
-    <h3>Bank details</h3>
-    <label>Account name <%= f.text_field :bank_account_name %></label>
-    <label>Account number <%= f.text_field :bank_account_number %></label>
-    <label>Bank name <%= f.text_field :bank_name %></label>
-    <label>SWIFT <%= f.text_field :bank_swift %></label>
+    <%= render "profiles/details_fields", f: %>
     <div class="form-actions"><%= f.submit "Save" %></div>
   <% end %>
 </section>
 
-<section class="card lock-summary">
-  <div>
+<section class="card" id="lock-screen">
+  <div class="lock-settings-head">
+    <span class="lock-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
     <h2>Lock screen</h2>
-    <p class="muted">
-      <% if @user.auto_lock? %>Locks automatically after <strong><%= User::AUTO_LOCK_OPTIONS.key(@user.auto_lock_minutes) %></strong> of inactivity.<% else %>Auto-lock is <strong>off</strong>.<% end %>
-      Lock by hand with the 🔒 button or <kbd>Ctrl</kbd>+<kbd>Shift</kbd>+<kbd>L</kbd>.
-    </p>
   </div>
-  <%= link_to "Change lock settings", edit_lock_settings_path, class: "btn btn-secondary" %>
+  <p class="muted">
+    <% saved = @lock_user.auto_lock_minutes_in_database %>
+    <% if saved.positive? %>Locks automatically after <strong><%= User::AUTO_LOCK_OPTIONS.key(saved) %></strong> of inactivity.<% else %>Auto-lock is <strong>off</strong>.<% end %>
+    The lock screen is always on; change your code or the auto-lock period below.
+  </p>
+  <%= form_with model: @lock_user, url: lock_settings_path, method: :patch, class: "stack" do |f| %>
+    <% if @lock_user.errors.any? %><p class="flash alert"><%= @lock_user.errors.full_messages.to_sentence %></p><% end %>
+    <%= render "lock_settings/fields", f:, setup: false %>
+    <div class="form-actions"><%= f.submit "Save lock settings" %></div>
+  <% end %>
 </section>

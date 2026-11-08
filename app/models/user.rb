@@ -13,6 +13,16 @@ class User < ApplicationRecord
   validates :hourly_rate, numericality: { greater_than: 0 }, allow_nil: true
   validates :currency, presence: true
   validates :invoice_due_day, numericality: { only_integer: true, in: 1..31 }
+  DEFAULT_INVOICE_ITEM = "Consultancy Service"
+  validates :invoice_item, presence: true, length: { maximum: 40 }
+
+  # Required on the profile and in onboarding (saved with `context: :invoice_details`), but not at sign-up.
+  INVOICE_FIELDS = {
+    address: "Address", bill_to_name: "Bill to name", bill_to_address: "Bill to address",
+    hourly_rate: "Hourly rate", bank_account_name: "Bank account name",
+    bank_account_number: "Bank account number", bank_name: "Bank name", bank_swift: "SWIFT"
+  }.freeze
+  validates(*INVOICE_FIELDS.keys, presence: true, on: :invoice_details)
 
   # How logged hours are worked out (see README, "How hours are calculated").
   HOURS_MODES = { "monthly" => "Fixed monthly target", "daily" => "No monthly target (8h per logged weekday)" }.freeze
@@ -56,14 +66,14 @@ class User < ApplicationRecord
   def lock_configured? = lock_pin_digest.present?
   def auto_lock? = auto_lock_minutes.positive?
 
-  INVOICE_FIELDS = {
-    address: "Address", hourly_rate: "Hourly rate", bank_account_name: "Bank account name",
-    bank_account_number: "Bank account number", bank_name: "Bank name", bank_swift: "SWIFT"
-  }.freeze
-
   def missing_invoice_fields
     INVOICE_FIELDS.reject { |attr, _| self[attr].present? }.values
   end
+
+  def invoice_details_complete? = missing_invoice_fields.empty?
+
+  # Onboarding is done once invoices can be generated and the lock screen is set up.
+  def onboarded? = invoice_details_complete? && lock_configured?
 
   # The configured due day in the month after `date`, capped at that month's last day (31 -> 30 Nov).
   def invoice_due_date_after(date)

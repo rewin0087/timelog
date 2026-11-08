@@ -409,15 +409,12 @@ th .reveal-btn { width:22px; height:22px; margin-left:2px; }
 .lock-settings-head h2 { margin:0; }
 .lock-badge { display:grid; place-items:center; flex:none; width:40px; height:40px; border-radius:12px; background:var(--grad); color:var(--on-accent); }
 .lock-badge svg { width:20px; height:20px; }
-.lock-summary { display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; }
-.lock-summary h2 { margin-bottom:4px; } .lock-summary p { margin:0; }
 kbd { padding:1px 6px; border:1px solid var(--line); border-bottom-width:2px; border-radius:6px; background:var(--surface); font:600 12px/1.6 ui-monospace, monospace; }
 
 @media (max-width: 720px) {
   .lock-screen { min-height:calc(100dvh - 32px); gap:22px; }
   .keypad { grid-template-columns:repeat(3, 68px); gap:14px 26px; }
   .key { width:68px; height:68px; }
-  .lock-summary .btn { width:100%; text-align:center; }
 }
 
 /* Misc */
@@ -711,3 +708,14 @@ html { -webkit-text-size-adjust:100%; }
 @media (hover: none) {
   .sidebar nav a:hover, input[type=submit]:hover, .btn:hover, .swatch:hover { transform:none; }
 }
+
+/* Onboarding (onboardings/show) */
+.onboarding.wide { max-width:760px; margin-left:auto; margin-right:auto; }
+.onboarding .form-actions input[type=submit] { flex:1; }
+.onboarding-steps { display:flex; gap:8px; margin:0 0 22px; padding:0; list-style:none; font-size:13px; font-weight:600; color:var(--muted); }
+.onboarding-steps li { flex:1; display:flex; align-items:center; gap:8px; padding-bottom:10px; border-bottom:3px solid var(--line); }
+.onboarding-steps span { display:grid; place-items:center; flex:none; width:24px; height:24px; border-radius:50%; background:var(--line); color:var(--fg); font-size:12px; }
+.onboarding-steps .current { color:var(--fg); border-color:var(--accent); }
+.onboarding-steps .current span { background:var(--grad); color:var(--on-accent); }
+.onboarding-steps .done { border-color:var(--accent); }
+.onboarding-steps .done span { background:var(--accent-soft); color:var(--accent); }

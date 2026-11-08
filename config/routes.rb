@@ -6,7 +6,8 @@ Rails.application.routes.draw do
   resource :lock, only: %i[show create destroy] do
     post :heartbeat
   end
-  resource :lock_settings, only: %i[edit update]
+  resource :lock_settings, only: :update
+  resource :onboarding, only: %i[show update]
   resource :inspiration, only: :show
   resources :invoices, only: %i[index create show]
   root "dashboard#show"

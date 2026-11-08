@@ -159,9 +159,27 @@ RSpec.describe User do
     end
   end
 
+  describe "invoice details" do
+    it "are optional at sign-up but required in the invoice_details context" do
+      user = build(:user, :new_signup)
+      expect(user).to be_valid
+      expect(user.valid?(:invoice_details)).to be(false)
+      expect(user.errors.attribute_names).to contain_exactly(:address, :bill_to_name, :bill_to_address, :hourly_rate, :bank_account_name, :bank_account_number, :bank_name, :bank_swift)
+      expect(build(:user).valid?(:invoice_details)).to be(true)
+    end
+  end
+
+  describe "#onboarded?" do
+    it "needs both invoice details and a lock code" do
+      expect(build(:user)).to be_onboarded
+      expect(build(:user, :without_lock)).not_to be_onboarded
+      expect(build(:user, :without_invoice_details)).not_to be_onboarded
+    end
+  end
+
   describe "#missing_invoice_fields" do
     it "lists every blank invoice field" do
-      expect(build(:user).missing_invoice_fields).to eq([ "Address", "Hourly rate", "Bank account name", "Bank account number", "Bank name", "SWIFT" ])
+      expect(build(:user, :without_invoice_details).missing_invoice_fields).to eq([ "Address", "Bill to name", "Bill to address", "Hourly rate", "Bank account name", "Bank account number", "Bank name", "SWIFT" ])
     end
 
     it "is empty when the profile is complete" do

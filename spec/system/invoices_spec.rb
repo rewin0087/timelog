@@ -19,15 +19,6 @@ RSpec.describe "Invoices" do
     expect(page).to have_content("Billed vs logged hours")
   end
 
-  it "points to the profile when details are missing" do
-    user.update!(bank_swift: nil)
-    sign_in_ui(user)
-    click_on "Invoices"
-    expect(page).to have_content("Complete your profile before generating: SWIFT.")
-    click_on "Generate invoice"
-    expect(page).to have_content("Complete your profile first: SWIFT.")
-  end
-
   context "with JavaScript", :js do
     before { Invoice.generate_for(user, Date.new(2026, 10, 1)) }
 

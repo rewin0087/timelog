@@ -37,7 +37,7 @@ RSpec.describe "Authentication" do
 
   describe "pages that need a session" do
     [ [ :get, "/" ], [ :get, "/time_entries" ], [ :get, "/time_entries/new" ], [ :get, "/reports" ],
-      [ :get, "/reports/export" ], [ :get, "/invoices" ], [ :get, "/profile/edit" ], [ :get, "/lock_settings/edit" ],
+      [ :get, "/reports/export" ], [ :get, "/invoices" ], [ :get, "/profile/edit" ], [ :get, "/onboarding" ],
       [ :post, "/today" ], [ :post, "/invoices" ], [ :patch, "/theme" ] ].each do |verb, path|
       it "redirects #{verb.upcase} #{path} to sign in" do
         send(verb, path)

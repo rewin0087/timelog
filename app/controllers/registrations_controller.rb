@@ -11,7 +11,7 @@ class RegistrationsController < ApplicationController
     @user = User.new(params.require(:user).permit(:name, :email_address, :password, :password_confirmation))
     if @user.save
       start_new_session_for @user
-      redirect_to edit_profile_path, notice: "Welcome! Complete your invoice details below."
+      redirect_to onboarding_path, notice: "Welcome! Two quick steps and you're ready to go."
     else
       render :new, status: :unprocessable_entity
     end

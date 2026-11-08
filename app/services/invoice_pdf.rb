@@ -3,7 +3,6 @@ require "prawn"
 # Renders an invoice laid out like the contractor invoice template (US Letter).
 # Coordinates are page points measured from the top-left corner.
 class InvoicePdf
-  BILL_TO = ["Avvoka Limited", "124 City Road", "EC1V 2NX London", "United Kingdom"].freeze
   PAGE_H = 792
   LEFT = 73
   COLS = [73, 196, 260, 343, 443, 549].freeze
@@ -44,8 +43,10 @@ class InvoicePdf
 
   def bill_to
     text "Bill to:", LEFT, 216, size: 10
-    BILL_TO.each_with_index do |line, i|
-      text line, LEFT, 242 + i * 17, size: 10, style: (:bold if i.zero?)
+    text @user.bill_to_name, LEFT, 242, size: 10, style: :bold
+    # Up to 4 address lines fit above the line-item table.
+    @user.bill_to_address.to_s.lines.map(&:strip).reject(&:empty?).first(4).each_with_index do |line, i|
+      text line, LEFT, 259 + i * 15, size: 10, width: 250
     end
   end
 
@@ -65,7 +66,7 @@ class InvoicePdf
     end
 
     y = 361
-    text "Consultancy Service", COLS[0], y, size: 10
+    text @user.invoice_item, COLS[0], y, size: 10, width: COLS[1] - COLS[0] - 4, height: 12
     text @invoice.period_label, COLS[0], y + 13, size: 8, width: COLS[1] - COLS[0] unless @invoice.full_month?
     text num(@invoice.hours), COLS[1] + 15, y, size: 10
     text "1", COLS[2], y, size: 10, width: 58, align: :right
@@ -93,9 +94,10 @@ class InvoicePdf
     text "Payment Method: Bank Transfer", LEFT, 601, size: 10.5
   end
 
-  def text(str, x, y_top, size: 10, style: nil, width: 400, align: :left, inline: false)
+  # Pass height to keep long text on one line (it shrinks to fit instead of wrapping).
+  def text(str, x, y_top, size: 10, style: nil, width: 400, height: nil, align: :left, inline: false)
     @pdf.font "Helvetica", style: style || :normal
-    @pdf.text_box str.to_s, at: [x, PAGE_H - y_top], width: width, size: size, align: align,
+    @pdf.text_box str.to_s, at: [x, PAGE_H - y_top], width: width, height: height, size: size, align: align,
                             inline_format: inline, overflow: :shrink_to_fit
   end
 

@@ -3,18 +3,12 @@ class InvoicesController < ApplicationController
     @invoices = Current.user.invoices.order(period_start: :desc)
     @default_period = Invoice.default_period
     @periods = (0..11).map { |i| Date.current.beginning_of_month.prev_month(i) }
-    @missing = Current.user.missing_invoice_fields
     @range_from, @range_to = suggested_range
     @range_due = Current.user.invoice_due_date_after(@range_to)
     @invoice_months = TimeStats.new(Current.user).invoice_months(12)
   end
 
   def create
-    missing = Current.user.missing_invoice_fields
-    if missing.any?
-      return redirect_to edit_profile_path, alert: "Complete your profile first: #{missing.to_sentence}."
-    end
-
     invoice =
       if params[:from].present? || params[:to].present?
         Invoice.generate_for_range(Current.user, Date.iso8601(params[:from].to_s), Date.iso8601(params[:to].to_s),

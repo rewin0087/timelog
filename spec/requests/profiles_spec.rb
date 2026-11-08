@@ -5,6 +5,22 @@ RSpec.describe "Profile" do
 
   before { sign_in(user) }
 
+  it "requires every invoice field" do
+    patch profile_path, params: { user: { address: "", bank_name: "", bill_to_address: "" } }
+    expect(response).to have_http_status(:unprocessable_entity)
+    expect(response.body).to include("Address can&#39;t be blank", "Bank name can&#39;t be blank", "Bill to address can&#39;t be blank")
+    expect(user.reload.address).to be_present
+  end
+
+  it "defaults the invoice item and lets it be changed but not cleared" do
+    get edit_profile_path
+    expect(response.body).to include('value="Consultancy Service"')
+    patch profile_path, params: { user: { invoice_item: "Software Development" } }
+    expect(user.reload.invoice_item).to eq("Software Development")
+    patch profile_path, params: { user: { invoice_item: "" } }
+    expect(response.body).to include("Invoice item can&#39;t be blank")
+  end
+
   it "shows the profile and lock summary" do
     get edit_profile_path
     expect(response.body).to include(user.email_address, "Locks automatically after <strong>15 minutes</strong>")

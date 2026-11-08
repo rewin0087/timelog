@@ -19,10 +19,10 @@ RSpec.describe "Locks" do
       expect(response.body).to include("Screen locked", user.name)
     end
 
-    it "sends users without a code to setup" do
+    it "sends users without a code to onboarding" do
       user.update_column(:lock_pin_digest, nil)
       get lock_path
-      expect(response).to redirect_to(edit_lock_settings_path)
+      expect(response).to redirect_to(onboarding_path)
     end
   end
 

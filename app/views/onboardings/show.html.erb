@@ -1,0 +1,33 @@
+<% lock_step = @step == "lock" %>
+<section class="card onboarding <%= lock_step ? "narrow" : "wide" %> auth">
+  <ol class="onboarding-steps" aria-label="Setup progress">
+    <li class="<%= lock_step ? "done" : "current" %>" <%= 'aria-current="step"'.html_safe unless lock_step %>><span>1</span> Invoice details</li>
+    <li class="<%= "current" if lock_step %>" <%= 'aria-current="step"'.html_safe if lock_step %>><span>2</span> Lock screen</li>
+  </ol>
+
+  <% if lock_step %>
+    <div class="lock-settings-head">
+      <span class="lock-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="11" width="14" height="10" rx="2.5"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+      <h2>Set up your lock screen</h2>
+    </div>
+    <p class="muted">Choose a 4–8 digit code. It unlocks the screen after it locks, so nobody else can use your signed-in session.</p>
+    <%= form_with model: @user, url: onboarding_path(step: "lock"), method: :patch, class: "stack" do |f| %>
+      <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
+      <%= render "lock_settings/fields", f:, setup: true %>
+      <div class="form-actions">
+        <%= f.submit "Finish setup" %>
+        <%= link_to "Back", onboarding_path(step: "invoice"), class: "btn btn-secondary" %>
+      </div>
+    <% end %>
+  <% else %>
+    <h2>Your invoice details</h2>
+    <p class="muted">Invoices are generated from these details, so all of them are required. You can change them later in your profile.</p>
+    <%= form_with model: @user, url: onboarding_path(step: "invoice"), method: :patch, class: "stack" do |f| %>
+      <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
+      <%= render "profiles/details_fields", f: %>
+      <div class="form-actions"><%= f.submit "Continue" %></div>
+    <% end %>
+  <% end %>
+
+  <div class="muted lock-foot">Not you? <%= button_to "Sign out", session_path, method: :delete, class: "link" %></div>
+</section>
