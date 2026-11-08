@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_08_130000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -73,6 +73,8 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
     t.date "period_start", null: false
     t.date "period_end", null: false
     t.decimal "tax_rate", precision: 5, scale: 2, default: "0.0", null: false
+    t.string "design"
+    t.string "color"
     t.index ["user_id", "number"], name: "index_invoices_on_user_id_and_number", unique: true
     t.index ["user_id", "period"], name: "index_invoices_on_user_id_and_period"
     t.index ["user_id", "period_start"], name: "index_invoices_on_user_id_and_period_start", unique: true
@@ -125,6 +127,10 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
     t.text "bill_to_address"
     t.string "invoice_item", default: "Consultancy Service", null: false
     t.decimal "tax_rate", precision: 5, scale: 2, default: "0.0", null: false
+    t.string "report_design"
+    t.string "report_color"
+    t.string "invoice_design"
+    t.string "invoice_color"
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 

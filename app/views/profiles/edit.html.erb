@@ -16,6 +16,12 @@
     <%= hidden_field_tag :section, "invoice" %>
     <% if @invoice_user.errors.any? %><p class="flash alert"><%= @invoice_user.errors.full_messages.to_sentence %></p><% end %>
     <%= render "profiles/invoice_fields", f: %>
+    <h3>PDF style defaults</h3>
+    <p class="muted">Used unless you pick another design or colour when exporting a report or generating an invoice.</p>
+    <div class="pdf-defaults">
+      <div><strong>Timesheet report</strong><%= render "shared/pdf_style_fields", kind: :report, style: @invoice_user.report_style, design_name: "user[report_design]", color_name: "user[report_color]" %></div>
+      <div><strong>Invoice</strong><%= render "shared/pdf_style_fields", kind: :invoice, style: @invoice_user.invoice_style, design_name: "user[invoice_design]", color_name: "user[invoice_color]" %></div>
+    </div>
     <div class="form-actions"><%= f.submit "Save invoice details" %></div>
   <% end %>
 </section>

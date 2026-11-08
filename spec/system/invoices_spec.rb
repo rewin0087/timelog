@@ -67,11 +67,27 @@ RSpec.describe "Invoices" do
     it "opens the invoice PDF preview" do
       sign_in_ui(user)
       click_on "Invoices"
-      click_on "Preview"
+      within("table.rtable tbody tr", text: "INV-001") { click_on "Preview" }
       within("dialog.pdf-modal[open]") do
         expect(page).to have_content("Invoice INV-001")
         expect(find("iframe", visible: :all)[:src]).to include("inline=1")
       end
+    end
+
+    it "previews a draft invoice with the picked design and colour before generating" do
+      sign_in_ui(user)
+      click_on "Invoices"
+      select "Modern: full-width colour header, striped rows", from: "Design"
+      find(".pdf-swatch[title='Teal']").click
+      expect(page).to have_css(".pdf-swatch.active[title='Teal']")
+      click_on "Preview PDF"
+      within("dialog.pdf-modal[open]") do
+        expect(page).to have_content("Invoice preview (not saved yet)")
+        src = find("iframe", visible: :all)[:src]
+        expect(src).to include("/invoices/preview", "design=modern", "color=%230f766e", "inline=1")
+        expect(src).not_to include("authenticity_token")
+      end
+      expect(user.invoices.count).to eq(1)
     end
   end
 end

@@ -27,17 +27,10 @@ class Invoice < ApplicationRecord
   # configured due day of the following month.
   # `items` are optional extra lines ({ description:, quantity:, rate: }); they replace any the invoice had.
   # `tax_rate` (percent) defaults to the user's tax rate.
-  def self.generate_for_range(user, from, to, due_date: nil, items: [], tax_rate: nil)
+  # `design`/`color` pick the PDF look (blank uses the user's invoice defaults, see PdfStyle).
+  def self.generate_for_range(user, from, to, due_date: nil, items: [], tax_rate: nil, design: nil, color: nil)
     invoice = user.invoices.find_or_initialize_by(period_start: from, period_end: to)
-    invoice.assign_attributes(
-      period: from.beginning_of_month,
-      invoice_date: to,
-      due_date: due_date || user.invoice_due_date_after(to),
-      hours: hours_for(user, from, to),
-      rate: user.hourly_rate,
-      currency: user.currency,
-      tax_rate: tax_rate.presence || user.tax_rate
-    )
+    invoice.assign_attributes(attributes_for(user, from, to, due_date:, tax_rate:, design:, color:))
     invoice.number ||= (user.invoices.maximum(:number) || 0) + 1
     transaction do
       invoice.items.delete_all if invoice.persisted?
@@ -47,6 +40,24 @@ class Invoice < ApplicationRecord
     end
     invoice
   end
+
+  # An unsaved invoice exactly as generate_for_range would save it, for previewing the PDF before generating.
+  def self.preview_for_range(user, from, to, due_date: nil, items: [], tax_rate: nil, design: nil, color: nil)
+    existing = user.invoices.find_by(period_start: from, period_end: to)
+    invoice = new(attributes_for(user, from, to, due_date:, tax_rate:, design:, color:)
+                    .merge(user:, period_start: from, period_end: to, number: existing&.number || (user.invoices.maximum(:number) || 0) + 1))
+    invoice.id = existing&.id # so refreshing an existing invoice doesn't count as an overlap
+    items.each_with_index { |item, i| invoice.items.build(item.to_h.symbolize_keys.slice(:description, :quantity, :rate).merge(position: i)) }
+    invoice
+  end
+
+  def self.attributes_for(user, from, to, due_date:, tax_rate:, design:, color:)
+    style = PdfStyle.new(:invoice, design: [ design, user.invoice_design ], color: [ color, user.invoice_color ])
+    { period: from.beginning_of_month, invoice_date: to, due_date: due_date || user.invoice_due_date_after(to),
+      hours: hours_for(user, from, to), rate: user.hourly_rate, currency: user.currency,
+      tax_rate: tax_rate.presence || user.tax_rate, design: style.design, color: style.color }
+  end
+  private_class_method :attributes_for
 
   # Hours to bill for `from`..`to`:
   #   fixed target -> the user's monthly target prorated by weekdays, whatever was logged
@@ -80,6 +91,7 @@ class Invoice < ApplicationRecord
   def tax_amount = (subtotal * tax_rate / 100).round(2)
   def amount = subtotal + tax_amount
   def tax? = tax_rate.positive?
+  def style = PdfStyle.new(:invoice, design: design, color: color)
 
   def period_label
     return period.strftime("%B %Y") if full_month?

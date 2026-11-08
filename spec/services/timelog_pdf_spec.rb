@@ -22,4 +22,36 @@ RSpec.describe TimelogPdf do
     expect(pdf_text(render(period: "custom", from: "2026-10-25", to: "2026-11-10"))).to include("TIMESHEET", "OCTOBER 25 - NOVEMBER 10 2026")
     expect(pdf_text(render(period: "custom", from: "2025-12-20", to: "2026-01-05"))).to include("DECEMBER 20 2025 - JANUARY 5 2026")
   end
+
+  describe "designs" do
+    before { create(:time_entry, user:, log_date: Date.new(2026, 11, 2), todo: "Designed task") }
+
+    def render_with(design, color = nil)
+      TimelogPdf.new(ReportRange.new(ActionController::Parameters.new({})), user, style: PdfStyle.new(:report, design:, color:)).render
+    end
+
+    it "renders every design with the entries and total" do
+      PdfStyle::DESIGNS.each_key do |design|
+        text = pdf_text(render_with(design, "4F46E5"))
+        expect(text).to include("TIMESHEET - NOVEMBER 2026", "Designed task", "TOTAL"), design
+      end
+    end
+
+    it "uses the chosen accent colour for the header backgrounds" do
+      expect(pdf_colors(render_with("classic"))).to include("FBE3D6")
+      colors = pdf_colors(render_with("classic", "4F46E5"))
+      expect(colors).to include("4F46E5")
+      expect(colors).not_to include("FBE3D6")
+    end
+
+    it "pads only the classic paper template with blank rows" do
+      expect(PDF::Inspector::Page.analyze(render_with("classic")).pages.size).to eq(1)
+      expect(pdf_text(render_with("modern"))).to include("Designed task")
+    end
+
+    it "uses the user's default style" do
+      user.update!(report_design: "minimal", report_color: "0F766E")
+      expect(pdf_text(TimelogPdf.new(ReportRange.new(ActionController::Parameters.new({})), user).render)).to include("JAMIE RIVERA  ·  NOVEMBER 1 - 30 2026")
+    end
+  end
 end

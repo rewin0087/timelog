@@ -32,6 +32,13 @@
     <label>Default tax rate (%) <%= f.number_field :tax_rate, min: 0, max: 100, step: 0.01, required: true %></label>
   </div>
 </fieldset>
+<fieldset class="admin-fieldset" <%= "disabled" if locked %>>
+  <legend>PDF style defaults</legend>
+  <div class="pdf-defaults">
+    <div><strong>Timesheet report</strong><%= render "shared/pdf_style_fields", kind: :report, style: user.report_style, design_name: "user[report_design]", color_name: "user[report_color]" %></div>
+    <div><strong>Invoice</strong><%= render "shared/pdf_style_fields", kind: :invoice, style: user.invoice_style, design_name: "user[invoice_design]", color_name: "user[invoice_color]" %></div>
+  </div>
+</fieldset>
 <fieldset class="admin-fieldset sensitive" <%= "disabled" if locked %>>
   <legend>Bank details <span class="badge badge-muted">masked</span></legend>
   <% if editing %>

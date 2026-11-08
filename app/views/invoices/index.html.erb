@@ -4,7 +4,7 @@
 <section class="card">
   <h2>Generate invoice</h2>
   <p class="muted">Dated the last day of the period and due on day <%= Current.user.invoice_due_day %> of the following month (change it in your <%= link_to "profile", edit_profile_path(anchor: "invoice-details") %>), or on the due date you pick for custom dates. <% if Current.user.fixed_target? %>A month always bills your fixed <%= fmt_hours(Current.user.monthly_target) %> at your hourly rate.<% else %>Bills the hours you logged (<%= User::DAILY_HOURS %>h per logged weekday) at your hourly rate.<% end %></p>
-  <%= render "invoices/generate_form", url: invoices_path, user: Current.user, periods: @periods, range: [ @range_from, @range_to, @range_due ] %>
+  <%= render "invoices/generate_form", url: invoices_path, preview_url: preview_invoices_path, user: Current.user, periods: @periods, range: [ @range_from, @range_to, @range_due ] %>
 </section>
 
 <section class="card">

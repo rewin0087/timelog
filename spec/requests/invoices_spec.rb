@@ -131,6 +131,48 @@ RSpec.describe "Invoices" do
     end
   end
 
+  describe "PDF style and preview" do
+    it "stores the picked design and colour on the invoice, and uses them for its PDF" do
+      post invoices_path, params: { period: "2026-10", design: "modern", color: "#4f46e5" }
+      invoice = user.invoices.last
+      expect(invoice.style).to have_attributes(design: "modern", color: "4F46E5")
+      expect(InvoicePdf).to receive(:new).with(have_attributes(id: invoice.id)).and_call_original
+      get invoice_path(invoice)
+    end
+
+    it "falls back to the user's invoice defaults" do
+      user.update!(invoice_design: "minimal", invoice_color: "0F766E")
+      post invoices_path, params: { period: "2026-10" }
+      expect(user.invoices.last).to have_attributes(design: "minimal", color: "0F766E")
+    end
+
+    it "previews the draft PDF without saving anything" do
+      get preview_invoices_path(period: "2026-10", design: "modern", color: "#0f766e", tax_rate: "10", inline: 1,
+                                items: { "0" => { description: "Preview allowance", quantity: "1", rate: "500" } })
+      expect(response.media_type).to eq("application/pdf")
+      expect(response.headers["Content-Disposition"]).to include("inline")
+      expect(pdf_text(response.body)).to include("INV-001", "Preview allowance", "Tax (10%):")
+      expect(user.invoices.count).to eq(0)
+      expect(InvoiceItem.count).to eq(0)
+    end
+
+    it "previews a refresh of an existing invoice with its number" do
+      Invoice.generate_for(user, Date.new(2026, 10, 1))
+      get preview_invoices_path(period: "2026-10")
+      expect(response.media_type).to eq("application/pdf")
+      expect(pdf_text(response.body)).to include("INV-001")
+    end
+
+    it "explains what is wrong instead of a PDF" do
+      Invoice.generate_for(user, Date.new(2026, 11, 1))
+      get preview_invoices_path(period: "custom", from: "2026-11-02", to: "2026-11-06", due_date: "2026-11-20")
+      expect(response).to have_http_status(:unprocessable_entity)
+      expect(response.body).to include("Can't preview this invoice yet", "INV-001 already covers November 2026")
+      get preview_invoices_path(period: "custom", from: "nope")
+      expect(response.body).to include("Pick a valid month")
+    end
+  end
+
   describe "GET /invoices/:id" do
     let(:invoice) { Invoice.generate_for(user, Date.new(2026, 10, 1)) }
 

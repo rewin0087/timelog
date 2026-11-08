@@ -42,7 +42,7 @@ export default class extends Controller {
   resolve(event) {
     const url = new URL(event.params.url, location.href)
     const form = event.currentTarget.closest("form")
-    if (form) new FormData(form).forEach((value, key) => url.searchParams.set(key, value))
+    if (form) new FormData(form).forEach((value, key) => { if (key !== "authenticity_token") url.searchParams.set(key, value) })
     return url.pathname + url.search
   }
 }

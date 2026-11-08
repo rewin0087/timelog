@@ -22,6 +22,10 @@ class Admin::InvoicesController < Admin::BaseController
     redirect_to admin_user_invoices_path(@user), alert: "Pick a valid month, or a valid date range and due date."
   end
 
+  def preview
+    send_invoice_preview(@user)
+  end
+
   def show
     invoice = @user.invoices.find(params[:id])
     send_data InvoicePdf.new(invoice).render, filename: invoice.filename, type: "application/pdf",

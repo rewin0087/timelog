@@ -15,7 +15,7 @@ class Admin::TimeEntriesController < Admin::BaseController
   # Timesheet PDF for any report period (same periods and layout as the user's Export report page).
   def export
     range = ReportRange.new(params)
-    send_data TimelogPdf.new(range, @user).render, filename: "#{@user.name.parameterize}_#{range.filename}", type: "application/pdf",
+    send_data TimelogPdf.new(range, @user, style: PdfStyle.from(:report, params, @user)).render, filename: "#{@user.name.parameterize}_#{range.filename}", type: "application/pdf",
               disposition: params[:inline].present? ? "inline" : "attachment"
   end
 

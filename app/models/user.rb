@@ -16,6 +16,9 @@ class User < ApplicationRecord
   DEFAULT_INVOICE_ITEM = "Consultancy Service"
   validates :invoice_item, presence: true, length: { maximum: 40 }
   validates :tax_rate, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
+  validates :report_design, :invoice_design, inclusion: { in: PdfStyle::DESIGNS.keys }, allow_blank: true
+  validates :report_color, :invoice_color, format: { with: PdfStyle::HEX, message: "must be a hex colour like #FBE3D6" }, allow_blank: true
+  normalizes :report_color, :invoice_color, with: ->(c) { PdfStyle.normalize_color(c) }
 
   # Required on the profile and in onboarding (saved with `context: :invoice_details`), but not at sign-up.
   INVOICE_FIELDS = {
@@ -63,6 +66,10 @@ class User < ApplicationRecord
       time_entries.where(log_date: date).update_all(hours: daily_hours_for(date) / count)
     end
   end
+
+  # Account defaults for generated PDFs.
+  def report_style = PdfStyle.new(:report, design: report_design, color: report_color)
+  def invoice_style = PdfStyle.new(:invoice, design: invoice_design, color: invoice_color)
 
   def lock_configured? = lock_pin_digest.present?
   def auto_lock? = auto_lock_minutes.positive?

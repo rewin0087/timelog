@@ -168,6 +168,20 @@ RSpec.describe "Admin users" do
       expect(response.body).to include("+ 1 extra item", "PHP 163,000.00")
     end
 
+    it "previews and generates with a design and colour" do
+      get preview_admin_user_invoices_path(user, period: "2026-10", design: "minimal", color: "#b91c1c", inline: 1)
+      expect(response.media_type).to eq("application/pdf")
+      expect(user.invoices.count).to eq(0)
+      post admin_user_invoices_path(user), params: { period: "2026-10", design: "minimal", color: "#b91c1c" }
+      expect(user.invoices.last).to have_attributes(design: "minimal", color: "B91C1C")
+    end
+
+    it "exports a timesheet with a design and colour" do
+      expect(TimelogPdf).to receive(:new).with(anything, user, style: have_attributes(design: "modern", color: "0F766E")).and_call_original
+      get export_admin_user_time_entries_path(user, period: "month", design: "modern", color: "#0f766e")
+      expect(response.media_type).to eq("application/pdf")
+    end
+
     it "saves a user's default tax rate" do
       patch admin_user_path(user), params: { user: { tax_rate: "12.5" } }
       expect(user.reload.tax_rate).to eq(12.5)

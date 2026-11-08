@@ -31,6 +31,19 @@ RSpec.describe InvoicePdf do
     expect(text).to include("Tax (0%):", "PHP 0.00")
   end
 
+  it "renders every design with the invoice's accent colour" do
+    PdfStyle::DESIGNS.each_key do |design|
+      invoice = Invoice.generate_for(user, Date.new(2026, 10, 1), design:, color: "#0F766E")
+      pdf = InvoicePdf.new(invoice).render
+      expect(pdf_text(pdf)).to include("INVOICE", "Consultancy Service", "Total:"), design
+      expect(pdf_colors(pdf)).to include("0F766E"), design
+    end
+  end
+
+  it "keeps the original grey table header by default" do
+    expect(pdf_colors(InvoicePdf.new(Invoice.generate_for(user, Date.new(2026, 10, 1))).render)).to include("AAAAAA")
+  end
+
   it "shows the period for a part-month invoice" do
     invoice = Invoice.generate_for_range(user, Date.new(2026, 10, 1), Date.new(2026, 10, 15))
     expect(pdf_text(InvoicePdf.new(invoice).render)).to include("1–15 October 2026")

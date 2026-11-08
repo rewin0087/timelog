@@ -70,6 +70,13 @@ RSpec.describe "Profile" do
     expect(response.body).to include("Tax rate must be less than or equal to 100")
   end
 
+  it "saves PDF style defaults with the invoice details" do
+    patch profile_path, params: { section: "invoice", user: { report_design: "modern", report_color: "#4F46E5", invoice_design: "minimal", invoice_color: "#0f766e" } }
+    expect(user.reload).to have_attributes(report_design: "modern", report_color: "4F46E5", invoice_design: "minimal", invoice_color: "0F766E")
+    patch profile_path, params: { section: "invoice", user: { report_design: "fancy" } }
+    expect(response.body).to include("Report design is not included in the list")
+  end
+
   it "only saves the fields of the submitted form" do
     patch profile_path, params: { section: "profile", user: { name: "Kept", bank_name: "Ignored" } }
     patch profile_path, params: { section: "invoice", user: { bank_name: "Saved", name: "Ignored" } }

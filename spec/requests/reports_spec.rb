@@ -50,6 +50,23 @@ RSpec.describe "Reports" do
     end
   end
 
+  describe "PDF style" do
+    it "offers the design and colour pickers with the user's defaults selected" do
+      user.update!(report_design: "modern", report_color: "0F766E")
+      get reports_path
+      html = Nokogiri::HTML(response.body)
+      expect(html.at_css("select[name=design] option[selected]")["value"]).to eq("modern")
+      expect(html.at_css("input[type=color][name=color]")["value"]).to eq("#0f766e")
+      expect(html.css(".pdf-swatch").size).to eq(PdfStyle::PRESETS.size)
+    end
+
+    it "exports with the picked design and colour" do
+      expect(TimelogPdf).to receive(:new).with(anything, user, style: have_attributes(design: "minimal", color: "B91C1C")).and_call_original
+      get export_report_path(period: "month", design: "minimal", color: "#b91c1c")
+      expect(response.media_type).to eq("application/pdf")
+    end
+  end
+
   it "shows an empty state" do
     get reports_path(period: "custom", from: "2026-01-01", to: "2026-01-31")
     expect(response.body).to include("No logs in this period.")

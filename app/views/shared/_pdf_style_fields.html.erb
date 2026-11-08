@@ -1,0 +1,23 @@
+<%# Design + accent colour picker for a generated PDF.
+    Locals: kind (:report or :invoice), style (PdfStyle to preselect), design_name / color_name (field names),
+    label (optional heading). %>
+<% default = "##{PdfStyle::DEFAULT_COLORS.fetch(kind)}" %>
+<div class="pdf-style" data-controller="color-presets" data-color-presets-default-value="<%= default.downcase %>"
+     data-action="input->color-presets#mark">
+  <label class="pdf-design">Design
+    <%= select_tag design_name, options_for_select(PdfStyle::DESIGNS.map { |key, text| [ text, key ] }, style.design) %>
+  </label>
+  <div class="pdf-color">
+    <span class="pdf-color-label"><%= kind == :invoice ? "Header & table colour" : "Header colour" %></span>
+    <div class="pdf-color-row">
+      <div class="pdf-swatches" role="group" aria-label="Colour presets">
+        <% PdfStyle::PRESETS.each do |name, hex| %>
+          <button type="button" class="pdf-swatch" style="--swatch:#<%= hex %>" title="<%= name %>" aria-label="<%= name %>" aria-pressed="false"
+                  data-color="#<%= hex.downcase %>" data-color-presets-target="swatch" data-action="color-presets#pick"></button>
+        <% end %>
+      </div>
+      <%= color_field_tag color_name, "##{style.color.downcase}", class: "pdf-color-input", aria: { label: "Custom colour" }, data: { color_presets_target: "input" } %>
+      <button type="button" class="link pdf-color-reset" data-action="color-presets#reset">Default</button>
+    </div>
+  </div>
+</div>

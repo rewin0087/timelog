@@ -10,7 +10,9 @@ Rails.application.routes.draw do
   resource :password, only: :update
   resource :onboarding, only: %i[show update]
   resource :inspiration, only: :show
-  resources :invoices, only: %i[index create show]
+  resources :invoices, only: %i[index create show] do
+    get :preview, on: :collection, defaults: { format: :pdf }
+  end
   root "dashboard#show"
 
   resources :time_entries, except: :show
@@ -31,7 +33,9 @@ Rails.application.routes.draw do
       resources :time_entries, except: %i[show new] do
         get :export, on: :collection, defaults: { format: :pdf }
       end
-      resources :invoices, only: %i[index show create destroy]
+      resources :invoices, only: %i[index show create destroy] do
+        get :preview, on: :collection, defaults: { format: :pdf }
+      end
     end
     resources :administrators, except: :show
   end

@@ -5,7 +5,7 @@
     <p class="flash alert">Can't generate yet. Missing: <%= @missing.to_sentence %>.</p>
   <% elsif can?(:create) %>
     <p class="muted">Exactly as <%= @user.name.split.first %> would from the app, with optional extra items and tax.</p>
-    <%= render "invoices/generate_form", url: admin_user_invoices_path(@user), user: @user, periods: @periods, range: [ @range_from, @range_to, @range_due ] %>
+    <%= render "invoices/generate_form", url: admin_user_invoices_path(@user), preview_url: preview_admin_user_invoices_path(@user), user: @user, periods: @periods, range: [ @range_from, @range_to, @range_due ] %>
   <% else %>
     <p class="muted">Your access level can't generate invoices.</p>
   <% end %>

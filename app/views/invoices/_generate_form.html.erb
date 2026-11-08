@@ -1,5 +1,5 @@
 <%# Generate invoice form shared by the app (Invoices) and the admin (a user's Invoices tab).
-    Locals: url, user, periods, range (Invoice.suggested_range), submit_label (optional). %>
+    Locals: url, preview_url, user, periods, range (Invoice.suggested_range), submit_label (optional). %>
 <% from, to, due = range %>
 <% default_period = Invoice.default_period.strftime("%Y-%m") %>
 <%= form_with url: url, class: "invoice-form", data: { controller: "report-period" } do |f| %>
@@ -39,5 +39,14 @@
     <button type="button" class="btn btn-secondary btn-sm" data-invoice-items-target="add" data-action="invoice-items#add">+ Add item</button>
   </div>
 
-  <div class="form-actions"><%= f.submit local_assigns.fetch(:submit_label, "Generate invoice") %></div>
+  <div class="invoice-style">
+    <h3>PDF style</h3>
+    <%= render "shared/pdf_style_fields", kind: :invoice, style: user.invoice_style, design_name: :design, color_name: :color %>
+  </div>
+
+  <div class="form-actions">
+    <%= f.submit local_assigns.fetch(:submit_label, "Generate invoice") %>
+    <%= button_tag "Preview PDF", type: "button", class: "btn btn-secondary",
+          data: { action: "pdf-preview#open", pdf_preview_url_param: preview_url, pdf_preview_title_param: "Invoice preview (not saved yet)" } %>
+  </div>
 <% end %>

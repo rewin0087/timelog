@@ -16,11 +16,12 @@
     </label>
     <label data-report-period-target="field" data-periods="custom" <%= "hidden" unless period == "custom" %>>From <%= date_field_tag :from, params[:from] %></label>
     <label data-report-period-target="field" data-periods="custom" <%= "hidden" unless period == "custom" %>>To <%= date_field_tag :to, params[:to] %></label>
+    <%= render "shared/pdf_style_fields", kind: :report, style: PdfStyle.from(:report, params, Current.user), design_name: :design, color_name: :color %>
     <div class="form-actions">
       <%= submit_tag "Show entries", name: nil, class: "btn-secondary" %>
       <%= button_tag "Preview PDF", type: "button", class: "btn btn-secondary",
             data: { action: "pdf-preview#open", pdf_preview_url_param: export_report_path, pdf_preview_title_param: "Time.log report" } %>
-      <%= link_to "Download PDF", export_report_path(request.query_parameters.slice("period", "count", "from", "to", "month")), class: "btn",
+      <%= link_to "Download PDF", export_report_path(request.query_parameters.slice("period", "count", "from", "to", "month", "design", "color")), class: "btn",
             data: { turbo: false, action: "pdf-preview#download", pdf_preview_url_param: export_report_path } %>
     </div>
   <% end %>
