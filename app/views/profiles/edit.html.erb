@@ -1,10 +1,22 @@
-<section class="card">
-  <h2>Profile &amp; invoice details</h2>
-  <p class="muted">These details appear on your generated invoices and are all required. Signed in as <%= @user.email_address %>.</p>
+<section class="card" id="profile">
+  <h2>Profile</h2>
+  <p class="muted">Your name and address appear at the top of your invoices. Signed in as <%= @user.email_address %>.</p>
   <%= form_with model: @user, url: profile_path, method: :patch, class: "stack" do |f| %>
+    <%= hidden_field_tag :section, "profile" %>
     <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
-    <%= render "profiles/details_fields", f: %>
-    <div class="form-actions"><%= f.submit "Save" %></div>
+    <%= render "profiles/profile_fields", f: %>
+    <div class="form-actions"><%= f.submit "Save profile" %></div>
+  <% end %>
+</section>
+
+<section class="card" id="invoice-details">
+  <h2>Invoice details</h2>
+  <p class="muted">Who you bill, what the invoice line says, and where you get paid. All fields are required to generate invoices.</p>
+  <%= form_with model: @invoice_user, url: profile_path, method: :patch, class: "stack" do |f| %>
+    <%= hidden_field_tag :section, "invoice" %>
+    <% if @invoice_user.errors.any? %><p class="flash alert"><%= @invoice_user.errors.full_messages.to_sentence %></p><% end %>
+    <%= render "profiles/invoice_fields", f: %>
+    <div class="form-actions"><%= f.submit "Save invoice details" %></div>
   <% end %>
 </section>
 
@@ -22,5 +34,20 @@
     <% if @lock_user.errors.any? %><p class="flash alert"><%= @lock_user.errors.full_messages.to_sentence %></p><% end %>
     <%= render "lock_settings/fields", f:, setup: false %>
     <div class="form-actions"><%= f.submit "Save lock settings" %></div>
+  <% end %>
+</section>
+
+<section class="card" id="password">
+  <div class="lock-settings-head">
+    <span class="lock-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8" cy="15" r="4"/><path d="M11 12l8-8M16 7l2 2M18 5l2 2"/></svg></span>
+    <h2>Password</h2>
+  </div>
+  <p class="muted">Changing your password signs you out on every other device.</p>
+  <%= form_with model: @password_user, url: password_path, method: :patch, class: "stack" do |f| %>
+    <% if @password_user.errors.any? %><p class="flash alert"><%= @password_user.errors.full_messages.to_sentence %></p><% end %>
+    <label>Current password <%= password_field_tag :current_password, nil, required: true, autocomplete: "current-password" %></label>
+    <label>New password (min 8 characters) <%= f.password_field :password, required: true, minlength: 8, maxlength: 72, autocomplete: "new-password" %></label>
+    <label>Confirm new password <%= f.password_field :password_confirmation, required: true, maxlength: 72, autocomplete: "new-password" %></label>
+    <div class="form-actions"><%= f.submit "Update password" %></div>
   <% end %>
 </section>

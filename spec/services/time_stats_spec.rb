@@ -129,4 +129,37 @@ RSpec.describe TimeStats do
     expect(oct[:logged_hours]).to be_within(0.001).of(7.2727)
     expect(stats.invoice_months(2).last).to include(invoices: 0, billed_hours: 0)
   end
+
+  describe "#range" do
+    before do
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 2), todo: "Build API")
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 2), todo: "build api ")
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 4), todo: "Public holiday")
+    end
+
+    it "totals the period and lists the top tasks" do
+      r = stats.range(Date.new(2026, 11, 1), Date.new(2026, 11, 30))
+      expect(r).to have_attributes(entries: 3, days_logged: 2, weekdays: 21, weekdays_logged: 2, holiday_days: 1, bucket: :day)
+      expect(r.buckets.size).to eq(30)
+      expect(r.top_tasks.first).to eq([ "Build API", 2 ])
+      expect(r.by_weekday.to_h).to include("Mon" => 2, "Wed" => 1, "Tue" => 0)
+    end
+
+    it "buckets by week up to 26 weeks and by month beyond" do
+      expect(stats.range(Date.new(2026, 9, 1), Date.new(2026, 11, 30)).bucket).to eq(:week)
+      yearly = stats.range(Date.new(2025, 12, 1), Date.new(2026, 11, 30))
+      expect(yearly.bucket).to eq(:month)
+      expect(yearly.buckets.size).to eq(12)
+      expect(yearly.buckets.last).to have_attributes(entries: 3, days_logged: 2)
+    end
+  end
+
+  describe "#expected_between and #missed_between" do
+    it "only count days up to today" do
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 2))
+      expect(stats.expected_between(Date.new(2026, 11, 1), Date.new(2026, 11, 30))).to eq(stats.expected_to_date)
+      expect(stats.missed_between(Date.new(2026, 11, 1), Date.new(2026, 11, 30)).size).to eq(8)
+      expect(stats.expected_between(Date.new(2026, 12, 1), Date.new(2026, 12, 31))).to eq(0)
+    end
+  end
 end

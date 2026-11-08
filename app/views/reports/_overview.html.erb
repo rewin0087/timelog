@@ -1,0 +1,82 @@
+<%# Charts for the selected report period: what the exported PDF will cover. %>
+<% o = @overview %>
+<% today = Date.current %>
+<% pct = @expected.positive? ? (o.hours / @expected * 100).round : nil %>
+<section class="card">
+  <h2>Overview <small><%= @range.label %> · <%= pluralize(o.weekdays, "weekday") %></small></h2>
+  <div class="kpis">
+    <div class="kpi"><span class="kpi-label">Hours logged</span><span class="kpi-value"><%= fmt_hours(o.hours) %></span>
+      <span class="kpi-note"><%= pct ? "#{pct}% of #{fmt_hours(@expected)} expected" : "nothing expected yet" %></span></div>
+    <div class="kpi"><span class="kpi-label">Activities logged</span><span class="kpi-value"><%= number_with_delimiter(o.entries) %></span>
+      <span class="kpi-note">across <%= pluralize(o.days_logged, "day") %><%= ", #{number_with_precision(o.entries.to_f / o.days_logged, precision: 1)} per day" if o.days_logged.positive? %></span></div>
+    <div class="kpi"><span class="kpi-label">Weekdays logged</span><span class="kpi-value"><%= o.weekdays_logged %>/<%= o.weekdays %></span>
+      <span class="kpi-note"><%= o.holiday_days.positive? ? "incl. #{pluralize(o.holiday_days, 'holiday')}" : "no holidays" %></span></div>
+    <div class="kpi"><span class="kpi-label">Missed weekdays</span><span class="kpi-value"><%= @missed.size %></span>
+      <span class="kpi-note"><%= @missed.any? ? @missed.first(4).map { |d| d.strftime("%-d %b") }.join(", ") + ("…" if @missed.size > 4).to_s : "none" %></span></div>
+  </div>
+
+  <% if o.bucket == :day %>
+    <% dense = o.days.size > 16 %>
+    <% bars = o.days.map do |d|
+         future = d.date > today
+         missed = !future && !d.weekend? && d.entries.zero? && d.date < today
+         tone = future ? "ghost" : (missed ? "missed" : (d.holiday ? holiday_tone(d.holiday) : "accent"))
+         status = future ? "Upcoming" : (missed ? "Missed" : (d.weekend? && d.entries.zero? ? "Weekend" : TimeStats.holiday_label(d.holiday)))
+         labelled = !dense || d == o.days.first || d.date.day == 1 || (d.date.day % 5).zero? || d.date == today
+         { label: (d.date.day if labelled), sub: (d.date.strftime("%b") if d.date.day == 1 || d == o.days.first),
+           dim: d.weekend?, class: ("is-today" if d.date == today),
+           aria: "#{d.date.strftime('%a %-d %b')}: #{fmt_hours(d.hours)}, #{pluralize(d.entries, 'activity')}#{", #{status}" if status}",
+           tip: safe_join([ tag.strong(d.date.strftime("%a, %-d %b")), "#{fmt_hours(d.hours)} · #{pluralize(d.entries, 'activity')}", status ].compact, tag.br),
+           series: [ { value: (future || missed) ? Current.user.daily_hours_for(d.date) * (missed ? 1 : 0.35) : d.hours, tone: tone } ] }
+       end %>
+    <% kinds = o.days.filter_map(&:holiday).uniq %>
+    <h3 class="chart-title">Hours per day</h3>
+    <%= render "charts/columns", bars: bars, dense: dense,
+               legend: [ [ "accent", "Logged" ], *kinds.map { |k| [ holiday_tone(k), TimeStats.holiday_label(k) ] },
+                         ([ "missed", "Missed" ] if @missed.any?), ([ "ghost", "Upcoming" ] if o.to > today) ].compact,
+               title: "Hours logged per day, #{@range.label}" %>
+  <% else %>
+    <% step = (o.buckets.size / 13.0).ceil %>
+    <% bars = o.buckets.each_with_index.map do |b, i|
+         label, sub = o.bucket == :week ? [ b.from.strftime("%-d"), b.from.strftime("%b") ] : [ b.from.strftime("%b"), b.from.year ]
+         name = o.bucket == :week ? "Week of #{b.from.strftime('%-d %b %Y')}" : b.from.strftime("%B %Y")
+         label, sub = nil, nil unless (i % step).zero?
+         { label: label, sub: sub,
+           aria: "#{name}: #{fmt_hours(b.hours)}, #{pluralize(b.entries, 'activity')}",
+           tip: safe_join([ tag.strong(name), "#{fmt_hours(b.hours)} logged", "#{pluralize(b.entries, 'activity')} over #{pluralize(b.days_logged, 'day')}" ], tag.br),
+           series: [ { value: b.hours, tone: b.to > today ? "soft" : "accent" } ] }
+       end %>
+    <h3 class="chart-title">Hours per <%= o.bucket %></h3>
+    <%= render "charts/columns", bars: bars, dense: bars.size > 16, title: "Hours logged per #{o.bucket}, #{@range.label}" %>
+  <% end %>
+</section>
+
+<div class="chart-grid-2">
+  <section class="card">
+    <h2>By weekday <small>activities in this period</small></h2>
+    <% top = [ o.by_weekday.map(&:last).max, 1 ].max %>
+    <div class="hbars">
+      <% o.by_weekday.each do |day, count| %>
+        <div class="hbar-row" tabindex="0" aria-label="<%= day %>: <%= pluralize(count, 'activity') %>">
+          <span class="hbar-label"><%= day %></span>
+          <span class="hbar-track"><% if count.positive? %><span class="hbar-seg tone-<%= %w[Sat Sun].include?(day) ? 'soft' : 'accent' %>" style="width:<%= chart_pct(count, top) %>"></span><% end %></span>
+          <span class="hbar-value"><%= count %></span>
+        </div>
+      <% end %>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Most logged tasks <small>in this period</small></h2>
+    <% top = o.top_tasks.first.last %>
+    <div class="hbars hbars-wide">
+      <% o.top_tasks.each do |todo, count| %>
+        <div class="hbar-row" tabindex="0" aria-label="<%= todo %>: <%= pluralize(count, 'time') %>">
+          <span class="hbar-label" title="<%= todo %>"><%= todo %></span>
+          <span class="hbar-track"><span class="hbar-seg tone-accent" style="width:<%= chart_pct(count, top) %>"></span></span>
+          <span class="hbar-value"><%= count %>×</span>
+        </div>
+      <% end %>
+    </div>
+  </section>
+</div>

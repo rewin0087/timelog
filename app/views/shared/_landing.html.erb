@@ -1,0 +1,42 @@
+<%# Signed-out landing (sign in / sign up): product intro beside the form, over an animated background.
+    Use with `render layout: "shared/landing"`; the block is the form card. %>
+<% content_for :body_class, "landing-page" %>
+<div class="landing-bg" aria-hidden="true">
+  <span class="blob blob-1"></span><span class="blob blob-2"></span><span class="blob blob-3"></span><span class="blob blob-4"></span>
+  <span class="landing-grid"></span>
+  <% 8.times do |i| %><span class="tick" style="--i:<%= i %>"></span><% end %>
+</div>
+
+<div class="landing">
+  <header class="landing-intro">
+    <div class="landing-brand"><span class="brand-mark">⏱</span> <%= render "shared/wordmark" %></div>
+    <h1>Log the day.<br><span class="grad-text">Bill the month.</span></h1>
+    <p class="landing-lead">One line a day is all it takes. Time.log splits your hours, keeps you on target, and turns your logs into PDF reports and invoices.</p>
+  </header>
+
+  <div class="landing-form"><%= yield %></div>
+
+  <div class="landing-details">
+    <ul class="landing-features">
+      <li style="--i:0"><span class="feature-icon" aria-hidden="true">✎</span><div><strong>One-line daily logs</strong><small>Hours are split across the day's todos for you.</small></div></li>
+      <li style="--i:1"><span class="feature-icon" aria-hidden="true">◔</span><div><strong>Stay on target</strong><small>Hours left, missed weekdays and monthly progress at a glance.</small></div></li>
+      <li style="--i:2"><span class="feature-icon" aria-hidden="true">❏</span><div><strong>Invoices &amp; reports</strong><small>PDF invoices and timelog reports in one click.</small></div></li>
+      <li style="--i:3"><span class="feature-icon" aria-hidden="true">⚿</span><div><strong>Private by default</strong><small>A lock screen guards your signed-in session.</small></div></li>
+    </ul>
+
+    <div class="landing-preview" aria-hidden="true">
+      <div class="lp-head">
+        <svg class="lp-clock" viewBox="0 0 40 40"><circle cx="20" cy="20" r="17"/><line class="lp-hand-h" x1="20" y1="20" x2="20" y2="11"/><line class="lp-hand-m" x1="20" y1="20" x2="20" y2="7"/><circle class="lp-pin" cx="20" cy="20" r="1.8"/></svg>
+        <div><strong>Today</strong><small>3 activities</small></div>
+        <span class="lp-hours">7.62h</span>
+      </div>
+      <ul class="lp-rows">
+        <li style="--i:0"><i></i><span>Sprint planning</span><b>2.54h</b></li>
+        <li style="--i:1"><i></i><span>Build invoice export</span><b>2.54h</b></li>
+        <li style="--i:2"><i></i><span>Code review</span><b>2.54h</b></li>
+      </ul>
+      <div class="lp-progress"><span></span></div>
+      <small class="lp-caption">Month progress · on track</small>
+    </div>
+  </div>
+</div>

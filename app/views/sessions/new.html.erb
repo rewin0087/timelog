@@ -1,9 +1,12 @@
-<section class="card narrow auth">
-  <h2>Sign in</h2>
-  <%= form_with url: session_path, class: "stack" do |form| %>
-    <label>Email <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", value: params[:email_address] %></label>
-    <label>Password <%= form.password_field :password, required: true, autocomplete: "current-password", maxlength: 72 %></label>
-    <div class="form-actions"><%= form.submit "Sign in" %></div>
-  <% end %>
-  <p class="muted">No account? <%= link_to "Sign up", new_registration_path %></p>
-</section>
+<%= render layout: "shared/landing" do %>
+  <section class="card auth landing-card">
+    <h2>Welcome back</h2>
+    <p class="muted">Sign in to log today's work.</p>
+    <%= form_with url: session_path, class: "stack" do |form| %>
+      <label>Email <%= form.email_field :email_address, required: true, autofocus: true, autocomplete: "username", value: params[:email_address] %></label>
+      <label>Password <%= form.password_field :password, required: true, autocomplete: "current-password", maxlength: 72 %></label>
+      <div class="form-actions"><%= form.submit "Sign in" %></div>
+    <% end %>
+    <p class="muted">No account? <%= link_to "Sign up", new_registration_path %></p>
+  </section>
+<% end %>

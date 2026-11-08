@@ -1,7 +1,12 @@
 class DashboardController < ApplicationController
+  DISPLAYS = %w[table timeline].freeze
+
   def show
     today = Date.current
     @view = params[:view] == "month" ? "month" : "week"
+    # Table or timeline for the activity list; the last choice sticks for the session.
+    session[:dashboard_display] = params[:display] if params[:display].in?(DISPLAYS)
+    @display = session[:dashboard_display].presence_in(DISPLAYS) || "table"
 
     if @view == "month"
       month = (Date.strptime(params[:month].to_s, "%Y-%m") rescue today).beginning_of_month

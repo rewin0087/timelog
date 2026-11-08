@@ -1,0 +1,21 @@
+<%# Activity list as a vertical timeline: one node per logged day, its todos beneath. %>
+<ol class="activity-timeline">
+  <% @by_day.each do |date, entries| %>
+    <li class="activity-timeline-day <%= "is-today" if date == Date.current %>">
+      <div class="activity-timeline-head">
+        <span class="date-chip"><%= date.strftime("%a, %d %b") %></span>
+        <% if date == Date.current %><span class="badge badge-good">Today</span><% end %>
+        <span class="activity-timeline-total"><%= number_with_precision(entries.sum(&:hours), precision: 2) %>h · <%= pluralize(entries.size, "activity") %></span>
+      </div>
+      <ul class="activity-timeline-items">
+        <% entries.each do |e| %>
+          <li class="activity-timeline-item">
+            <span class="activity-timeline-todo"><%= e.todo %></span>
+            <span class="activity-timeline-hours"><%= number_with_precision(e.hours, precision: 2) %>h</span>
+          </li>
+        <% end %>
+      </ul>
+    </li>
+  <% end %>
+</ol>
+<p class="activity-timeline-sum"><span>Total</span> <strong><%= number_with_precision(@total_hours, precision: 2) %>h</strong></p>

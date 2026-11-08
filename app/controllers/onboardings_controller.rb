@@ -29,7 +29,7 @@ class OnboardingsController < ApplicationController
     end
 
     def save_invoice_details
-      @user.assign_attributes(params.require(:user).permit(*ProfilesController::PROFILE_FIELDS))
+      @user.assign_attributes(params.require(:user).permit(*ProfilesController::ALL_FIELDS))
       if @user.save(context: :invoice_details)
         @user.onboarded? ? finish : redirect_to(onboarding_path(step: "lock"))
       else

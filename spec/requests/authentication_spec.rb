@@ -1,6 +1,21 @@
 require "rails_helper"
 
 RSpec.describe "Authentication" do
+  it "shows the Time.log landing with the sign-in form" do
+    get new_session_path
+    html = Nokogiri::HTML(response.body)
+    expect(html.at_css("title").text).to eq("Time.log")
+    expect(html.at_css("body")["class"]).to include("landing-page")
+    expect(html.at_css(".landing h1").text).to include("Log the day.", "Bill the month.")
+    expect(html.css(".landing-features li").size).to eq(4)
+    expect(html.at_css(".landing-form form[action='#{session_path}']")).to be_present
+  end
+
+  it "uses the same landing for sign up" do
+    get new_registration_path
+    expect(Nokogiri::HTML(response.body).at_css(".landing-form form[action='#{registration_path}']")).to be_present
+  end
+
   let(:user) { create(:user) }
 
   describe "sign in" do

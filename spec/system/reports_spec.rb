@@ -41,7 +41,7 @@ RSpec.describe "Export report" do
     select "Previous month", from: "Period"
     click_on "Preview PDF"
     within("dialog.pdf-modal[open]") do
-      expect(page).to have_content("Timelog report")
+      expect(page).to have_content("Time.log report")
       expect(find("iframe", visible: :all)[:src]).to include("/reports/export", "period=previous_month", "inline=1")
       expect(find_link("Download PDF")[:href]).to include("period=previous_month")
       click_on "Close"

@@ -15,7 +15,8 @@ class LockSettingsController < ApplicationController
     if @lock_user.errors.none? && @lock_user.update(attrs)
       redirect_to edit_profile_path(anchor: "lock-screen"), notice: "Lock screen settings saved."
     else
-      @user = User.find(@lock_user.id)
+      @user = @invoice_user = User.find(@lock_user.id)
+      @password_user = User.find(@lock_user.id)
       render "profiles/edit", status: :unprocessable_entity
     end
   end

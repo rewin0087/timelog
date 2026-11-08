@@ -131,6 +131,66 @@ class TimeStats
     end
   end
 
+  # Overview of `from`..`to` for the export report: totals, hours bucketed by day, week, or month
+  # (depending on the span), activities per weekday, and the most logged tasks in the range.
+  Range = Struct.new(:from, :to, :days, :buckets, :bucket, :by_weekday, :top_tasks, keyword_init: true) do
+    def hours = days.sum(&:hours)
+    def entries = days.sum(&:entries)
+    def days_logged = days.count { |d| d.entries.positive? }
+    def weekdays = days.count { |d| !d.weekend? }
+    def weekdays_logged = days.count { |d| !d.weekend? && d.entries.positive? }
+    def holiday_days = days.count(&:holiday)
+  end
+
+  Bucket = Struct.new(:from, :to, :hours, :entries, :days_logged, keyword_init: true)
+
+  def range(from, to)
+    rows = user.time_entries.where(log_date: from..to).pluck(:log_date, :hours, :todo)
+    by_date = rows.group_by(&:first)
+    days = (from..to).map do |date|
+      day = by_date.fetch(date, [])
+      Day.new(date: date, hours: day.sum { |_, h, _| h }.to_d, entries: day.size,
+              holiday: day.filter_map { |_, _, todo| self.class.holiday_kind(todo) }.first)
+    end
+
+    span = (to - from).to_i + 1
+    bucket = span <= 62 ? :day : (span <= 26 * 7 ? :week : :month)
+    buckets = days.chunk_while do |a, b|
+      case bucket
+      when :day then false
+      when :week then a.date.cweek == b.date.cweek && a.date.cwyear == b.date.cwyear
+      else a.date.month == b.date.month && a.date.year == b.date.year
+      end
+    end.map do |chunk|
+      Bucket.new(from: chunk.first.date, to: chunk.last.date, hours: chunk.sum(&:hours),
+                 entries: chunk.sum(&:entries), days_logged: chunk.count { |d| d.entries.positive? })
+    end
+
+    weekday_counts = rows.map { |date, _, _| date.cwday }.tally
+    Range.new(
+      from: from, to: to, days: days, buckets: buckets, bucket: bucket,
+      by_weekday: (1..7).map { |wd| [ Date::ABBR_DAYNAMES[wd % 7], weekday_counts.fetch(wd, 0) ] },
+      top_tasks: rows.map(&:third).group_by { |t| t.squish.downcase }
+                     .map { |_, todos| [ todos.first.squish, todos.size ] }
+                     .sort_by { |todo, count| [ -count, todo ] }.first(6)
+    )
+  end
+
+  # Hours that should have been logged in `from`..`to`, counting only days up to today.
+  def expected_between(from, to)
+    last = [ to, today ].min
+    return 0.to_d if last < from
+    (from..last).sum { |d| user.daily_hours_for(d) }
+  end
+
+  # Weekdays in `from`..`to`, before today, with nothing logged.
+  def missed_between(from, to)
+    last = [ to, today - 1 ].min
+    return [] if last < from
+    logged = user.time_entries.where(log_date: from..last).distinct.pluck(:log_date)
+    (from..last).reject { |d| d.on_weekend? || logged.include?(d) }
+  end
+
   private
 
   def month_list(first, last)

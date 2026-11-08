@@ -24,7 +24,8 @@
     <p class="muted">Invoices are generated from these details, so all of them are required. You can change them later in your profile.</p>
     <%= form_with model: @user, url: onboarding_path(step: "invoice"), method: :patch, class: "stack" do |f| %>
       <% if @user.errors.any? %><p class="flash alert"><%= @user.errors.full_messages.to_sentence %></p><% end %>
-      <%= render "profiles/details_fields", f: %>
+      <%= render "profiles/profile_fields", f: %>
+      <%= render "profiles/invoice_fields", f: %>
       <div class="form-actions"><%= f.submit "Continue" %></div>
     <% end %>
   <% end %>

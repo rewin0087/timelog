@@ -9,7 +9,7 @@ RSpec.describe "Working hours settings" do
     click_on user.name
     expect(page).to have_checked_field("Fixed monthly target")
     fill_in "Monthly target hours (leave blank for 160)", with: "168"
-    click_on "Save"
+    click_on "Save profile"
     expect(page).to have_content("Profile saved. Hours on your logs were recalculated.")
     expect(page).to have_content("168h ÷ 21 weekdays = 8h per day")
     expect(page).to have_content("21 weekdays · 168h target")
@@ -22,7 +22,7 @@ RSpec.describe "Working hours settings" do
     expect(page).to have_field("Monthly target hours (leave blank for 160)")
     choose "No monthly target"
     expect(page).to have_no_field("Monthly target hours (leave blank for 160)")
-    click_on "Save"
+    click_on "Save profile"
     expect(page).to have_content("No monthly target: each logged weekday counts 8h")
 
     click_on "Invoices"

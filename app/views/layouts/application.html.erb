@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>Timelog</title>
+    <title>Time.log</title>
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
     <meta name="view-transition" content="same-origin">
     <%= csrf_meta_tags %>
@@ -13,13 +13,13 @@
     <%= javascript_importmap_tags %>
   </head>
   <% unlocked = app_unlocked? %>
-  <body data-controller="pdf-preview<%= " idle-lock" if unlocked %>" data-theme="<%= current_theme %>" class="<%= "with-sidebar" if unlocked %>"
+  <body data-controller="pdf-preview<%= " idle-lock" if unlocked %>" data-theme="<%= current_theme %>" class="<%= [("with-sidebar" if unlocked), content_for(:body_class)].compact_blank.join(" ") %>"
         <% if unlocked %>data-idle-lock-minutes-value="<%= Current.user.auto_lock_minutes %>" data-idle-lock-lock-url-value="<%= lock_path %>"
         data-idle-lock-heartbeat-url-value="<%= heartbeat_lock_path %>"<% end %>>
     <% if unlocked %>
       <% initials = Current.user.name.to_s.split.map(&:first).first(2).join.upcase %>
       <aside class="sidebar" data-controller="menu" data-action="keydown.esc@window->menu#close click@window->menu#outside">
-        <%= link_to root_path, class: "brand" do %><span class="brand-mark">⏱</span> Timelog<% end %>
+        <%= link_to root_path, class: "brand" do %><span class="brand-mark">⏱</span> <%= render "shared/wordmark" %><% end %>
         <button type="button" class="menu-toggle" aria-label="Account and skins" aria-expanded="false" aria-controls="sidebar-extras"
                 data-menu-target="button" data-action="menu#toggle"><span class="avatar"><%= initials %></span></button>
         <nav>

@@ -13,7 +13,7 @@ RSpec.describe "Lock settings (on the profile)" do
   it "requires the current code or password" do
     patch lock_settings_path, params: { user: { auto_lock_minutes: 30 } }
     expect(response).to have_http_status(:unprocessable_entity)
-    expect(response.body).to include("Enter your current lock code or account password", "Profile &amp; invoice details")
+    expect(response.body).to include("Enter your current lock code or account password", "Invoice details")
     patch lock_settings_path, params: { current_secret: "9999", user: { auto_lock_minutes: 30 } }
     expect(response).to have_http_status(:unprocessable_entity)
     expect(user.reload.auto_lock_minutes).to eq(5)

@@ -19,6 +19,47 @@ RSpec.describe "Dashboard" do
     expect(response.body).to include("October 2026", "October task", "month=2026-09", "month=2026-11")
   end
 
+  describe "activity display" do
+    before do
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 13), todo: "Timeline task")
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 9), todo: "Earlier task")
+    end
+
+    let(:html) { Nokogiri::HTML(response.body) }
+
+    it "shows a table by default with a switch to the timeline" do
+      get root_path
+      expect(html.css("table.rtable")).to be_present
+      expect(html.css(".activity-timeline")).to be_empty
+      expect(html.at_css("a.tab.active[aria-pressed=true]", text: "Table")).to be_present
+    end
+
+    it "shows a timeline grouped by day, today marked, and remembers the choice" do
+      get root_path(display: "timeline")
+      days = html.css(".activity-timeline-day")
+      expect(days.size).to eq(2)
+      expect(days.first.text).to include("Mon, 09 Nov", "Earlier task", "1 activity")
+      expect(html.css(".activity-timeline-day.is-today").text).to include("Fri, 13 Nov", "Today", "Timeline task")
+      expect(html.css("table.rtable")).to be_empty
+
+      get root_path(view: "month", month: "2026-11")
+      expect(Nokogiri::HTML(response.body).css(".activity-timeline")).to be_present
+
+      get root_path(display: "table")
+      expect(Nokogiri::HTML(response.body).css(".activity-timeline")).to be_empty
+    end
+
+    it "keeps the month when switching display" do
+      get root_path(view: "month", month: "2026-10")
+      expect(response.body).to include("display=timeline&amp;month=2026-10&amp;view=month")
+    end
+
+    it "ignores unknown displays" do
+      get root_path(display: "bogus")
+      expect(html.css("table.rtable")).to be_present
+    end
+  end
+
   it "falls back to the current month for a bad month param" do
     get root_path(view: "month", month: "garbage")
     expect(response.body).to include("<h2>November 2026</h2>")

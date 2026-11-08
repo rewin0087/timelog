@@ -20,6 +20,36 @@ RSpec.describe "Reports" do
     expect(response.body).to include("Preview: October 2026", "October task")
   end
 
+  describe "overview charts" do
+    let(:html) { Nokogiri::HTML(response.body) }
+
+    def kpi(label) = html.css(".kpi").find { |k| k.text.include?(label) }.css(".kpi-value").text.strip
+
+    it "summarises the selected period with per-day hours, weekdays, and top tasks" do
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 3), todo: "November task")
+      get reports_path
+      expect(response.body).to include("Overview", "Hours per day", "By weekday", "Most logged tasks")
+      expect(kpi("Activities logged")).to eq("2")
+      expect(kpi("Weekdays logged")).to eq("2/21")
+      expect(kpi("Missed weekdays")).to eq("7")
+      expect(html.css("figure.chart .chart-col").size).to eq(30)
+      expect(html.css(".hbars-wide .hbar-row").first.text).to include("November task", "2×")
+    end
+
+    it "groups long periods by week or month" do
+      get reports_path(period: "weeks", count: 12)
+      expect(response.body).to include("Hours per week")
+      get reports_path(period: "custom", from: "2025-12-01", to: "2026-11-30")
+      expect(response.body).to include("Hours per month")
+      expect(Nokogiri::HTML(response.body).css("figure.chart .chart-col").size).to eq(12)
+    end
+
+    it "is hidden when the period has no logs" do
+      get reports_path(period: "custom", from: "2026-01-01", to: "2026-01-31")
+      expect(response.body).not_to include("Hours per day")
+    end
+  end
+
   it "shows an empty state" do
     get reports_path(period: "custom", from: "2026-01-01", to: "2026-01-31")
     expect(response.body).to include("No logs in this period.")
