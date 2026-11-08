@@ -1,6 +1,6 @@
-# Timelog
+# Timelog (Time.log)
 
-A small Rails 8 app for contractors to log daily work, export monthly timelog PDFs, and generate invoices. Each user has their own account, entries, and invoices.
+A small Rails 8 app for contractors to log daily work, export timesheet PDFs, and generate invoices. Each user has their own account, entries, and invoices. It is shown to users as **Time.log**; the codebase keeps the `Timelog` name. A separate admin back office (`/admin`) manages every user's data.
 
 ## Stack
 
@@ -15,38 +15,52 @@ A small Rails 8 app for contractors to log daily work, export monthly timelog PD
 Prerequisites: Ruby 3.4.9 and a running PostgreSQL server (the dev database is `timelog_development`, using your OS user as the role by default; see `config/database.yml`).
 
     bundle install
-    bin/rails db:create db:migrate
+    bin/rails db:create db:migrate db:seed
     bin/rails s     # http://localhost:3000
 
 Or run `bin/setup` to install gems, prepare the database, and start the server in one step.
 
-Open the app, go to **Sign up** (`/signup`), and create an account. You'll then be asked to choose a lock code (see [Lock screen](#lock-screen-lock)). Everything after that requires being signed in and unlocked.
+Open the app and choose **Sign up** (`/signup`). After creating an account you go through a two-step [onboarding](#onboarding-onboarding) (invoice details, then a lock code). Everything after that requires being signed in, onboarded, and unlocked.
+
+For the admin, sign in at `/admin`. In development, `db:seed` creates a super admin `admin@example.com` / `admin-password`. Elsewhere, create one with:
+
+    bin/rails admin:create EMAIL=you@example.com PASSWORD=a-long-password NAME="Your Name"
 
 ## Features
 
-### Layout, skins, and mobile
+### Landing, layout, skins, and mobile
 
-- Navigation lives in a left sidebar. Page changes animate with the View Transitions API: the new page slides in from the window edge (from the right going forward, from the left going back).
+- **Landing:** sign in (`/session/new`) and sign up share a landing page with the Time.log intro, feature cards, an animated preview card, and an animated background (drifting colour blobs, a moving grid, rising rings). The animations are switched off when the system asks for reduced motion.
+- **Navigation** lives in a left sidebar. Page changes use the View Transitions API: the old page slides off one window edge while the new one slides in from the other, both moving together. Moving down the sidebar (or forward) slides in from the right; moving up, or the browser's Back button, slides in from the left. The distance is measured from the page to the window edge, so it reaches the edges on any screen width. Visits to the same page (form saves, month paging) cross-fade instead. Lock and unlock use a shutter animation.
 - **Skins:** 13 colour themes, picked from the swatches in the sidebar: Violet (default), Ocean, Sunset, Forest, Candy, Midnight, Rainbow, Lemonade, Ruby, Slate, Mocha, Neon, and Aurora. Midnight, Neon, and Aurora are dark. The choice is saved in the Rails session, so it resets to Violet after signing out. Skins are listed in `app/models/theme.rb` and defined as CSS custom properties in `app/assets/stylesheets/application.css`.
 - **Mobile:** at 860px and below, the sidebar becomes a top bar with a bottom tab bar, and skins and sign out move to the avatar menu. At 640px and below, tables become stacked cards and forms go single-column. On phones, PDF previews open in a new tab rather than a modal.
+
+### Onboarding (`/onboarding`)
+
+New users can't use the app until two required steps are done (`User#onboarded?`); every page redirects here until then.
+
+1. **Invoice details:** name, address, client (bill to) name and address, invoice item, hourly rate, currency, due day, default tax rate, working hours, and bank details.
+2. **Lock screen:** a 4–8 digit lock code and the auto-lock period.
+
+Users who already have one part (for example, created in the admin with invoice details) are only asked for the other. When both are done they continue to the page they first asked for.
 
 ### Lock screen (`/lock`)
 
 Protects a signed-in session from anyone else at the same device.
 
-- **Setup:** users without a lock code are sent to `/lock_settings/edit` and can't use the app until they set one. Codes are 4–8 digits, and trivial ones (`0000`, `1234`, `9876`, …) are rejected. The code is stored as a bcrypt digest (`users.lock_pin_digest`).
+- **Setup:** the lock code is chosen during onboarding. Codes are 4–8 digits, and trivial ones (`0000`, `1234`, `9876`, …) are rejected. The code is stored as a bcrypt digest (`users.lock_pin_digest`).
 - **Locking:** use the 🔒 button in the sidebar or **Ctrl+Shift+L**, or let the app lock itself after the auto-lock period: 1, 5 (default), 15, or 30 minutes, 1 hour, or never. Locking or unlocking in one tab applies to the user's other open tabs.
 - **Enforced on the server:** lock state and last activity live on the `sessions` row. While locked, every page, PDF export, and API call is redirected to the lock screen (or answered `423 Locked`). An idle session is locked on its next request even if the browser's timer never fired. Signed-in pages are sent with `Cache-Control: no-store` and the Turbo cache is cleared on lock, so Back can't reveal them.
-- **Unlocking:** enter the code on the keypad or keyboard. After 5 wrong codes the session is signed out. A forgotten code can be reset in the lock settings with the account password after signing back in.
-- **Changing settings:** the Lock screen card on the profile page links to the settings. Any change needs the current code or the account password.
+- **Unlocking:** enter the code on the keypad or keyboard. After 5 wrong codes the session is signed out.
+- **Changing settings:** the Lock screen card on the profile page changes the code or the auto-lock period. Any change needs the current code or the account password, so a forgotten code can be reset with the password.
 
 ### Dashboard (`/`)
 
 - Quick-add a todo for **today**. The date is filled in for you.
-- Shows the current week by default. Add `?view=month` (optionally `&month=YYYY-MM`) for a monthly view with previous/next navigation.
-- Entries are grouped by day with a total hours figure.
-- **This month's progress:** hours logged vs the 160h target, hours left to log, activities logged, missed weekdays, a meter with an "expected by today" marker, and a per-day hours chart (logged, holiday, missed, still to log).
-- **Last 3 months:** hours logged per month against 160h, with each month's weekday count, logged weekdays, and whether it reached 160h.
+- Shows the current week by default. **Month report** (`?view=month`, optionally `&month=YYYY-MM`) shows a month with previous/next navigation.
+- The activity list can be shown as a **Table** or a **Timeline** (one node per day with its todos and hours, today highlighted). The choice (`?display=table|timeline`) is remembered for the session.
+- **This month's progress:** hours logged vs the target, hours left to log, activities logged, missed weekdays, a meter with an "expected by today" marker, and a per-day hours chart (logged, holiday, missed, still to log).
+- **Last 3 months:** hours logged per month against the target, with each month's weekday count, logged weekdays, and whether it reached the target.
 - **Holidays:** days logged as public holidays, non-working holidays, or other holidays, for this month and the last 3. There is no holiday field: a day counts when one of its todos mentions "public/regular/national holiday", "non-working", or "holiday" (checked in that order, see `TimeStats::HOLIDAY_KINDS`).
 
 ### Verse of the day and daily trivia
@@ -65,9 +79,9 @@ Create, edit, or delete entries on any date. Shows the 200 most recent entries, 
 
 Above the list (first page only): this month's and all-time hours, activities, days logged, and activities per day, hours and activities per month for the last 12 months, an 18-week activity heatmap, activities by weekday, and the most logged tasks.
 
-### Timelog export (`/reports`)
+### Timesheet export (`/reports`)
 
-Preview and download a PDF timelog (COUNT / DATE / TASK DONE / HOURS WORKED / NOTES table with a total) for:
+Preview and download a timesheet PDF (COUNT / DATE / TASK DONE / HOURS WORKED / NOTES table with a total) for:
 
 | Period | Params |
 | --- | --- |
@@ -77,20 +91,74 @@ Preview and download a PDF timelog (COUNT / DATE / TASK DONE / HOURS WORKED / NO
 | Last N weeks | `period=weeks&count=N` |
 | Custom range | `period=custom&from=YYYY-MM-DD&to=YYYY-MM-DD` |
 
-`N` is clamped to 1–366. Add `inline=1` to `/reports/export` to open the PDF in the browser instead of downloading it.
+`N` is clamped to 1–366. Add `inline=1` to `/reports/export` to open the PDF in the browser instead of downloading it. Pick the [PDF design and colour](#pdf-designs-and-colours) with `design=` and `color=`.
+
+When the period has logs, an overview sits above the entries: hours logged vs expected, activities, weekdays logged, missed weekdays, hours per day (per week up to 26 weeks, per month beyond), activities by weekday, and the most logged tasks.
 
 ### Invoices (`/invoices`)
 
 - Charts at the top: invoice count, hours billed, amount billed this year and per month (masked until you press an eye button), billed vs logged hours per month, and a 12-month invoice timeline with the next due date. The amount chart has no value axis, so amounts stay hidden.
-- Generate an invoice for a whole month (the last 12 months are listed; the default is the latest finished month), or for a custom date range within one month with its own due date.
-- The custom range is prefilled with the first day of the current month that hasn't been invoiced yet, so a partial invoice is easy to follow up.
-- Invoices are numbered per user (`INV-001`, `INV-002`, …). Regenerating the same period refreshes the existing invoice instead of creating a new one. Overlapping periods are rejected.
-- The invoice is dated the last day of the period and is due on your configured due day of the following month (capped at that month's last day).
-- PDFs are US Letter. The "Bill to" block comes from the client name and address on the profile (up to 4 address lines are printed).
+- **Generate invoice** is one form: pick a month (the last 12 are listed; the default is the latest finished month) or **Custom dates…** (a range within one month, with its own due date). The custom range is prefilled with the first day of the current month that hasn't been invoiced yet.
+- **Extra items (optional):** up to 8 extra lines (description, quantity, rate), e.g. reimbursements or allowances, on top of the hours charge.
+- **Tax rate:** prefilled from the profile's default tax rate (0 unless set) and can be changed per invoice.
+- **PDF style:** a [design and colour](#pdf-designs-and-colours), defaulting to the profile's invoice style. The invoice stores the style it was generated with.
+- **Preview PDF** renders the draft invoice exactly as it would be generated, without saving anything (`/invoices/preview`). If the form isn't valid yet (e.g. overlapping dates), the preview explains why.
+- Invoices are numbered per user (`INV-001`, `INV-002`, …). Regenerating the same period refreshes the existing invoice, replacing its extra items, tax, and style with what is in the form. Overlapping periods are rejected.
+- The invoice is dated the last day of the period and is due on the configured due day of the following month (capped at that month's last day), or on the date picked for custom dates.
+- **Amounts:** the invoice total is the hours charge (hours × rate) plus extra items plus tax (`Invoice#amount`); lists, charts, and the PDF all use the total.
+- PDFs are US Letter. The "Bill to" block comes from the client name and address in the invoice details (up to 4 address lines are printed).
+
+### PDF designs and colours
+
+Timesheets and invoices can be generated in three designs (`PdfStyle::DESIGNS`), each with an accent colour for the header and table-header backgrounds:
+
+| Design | Look |
+| --- | --- |
+| Classic (default) | The original templates: a boxed timesheet with a shaded title band (padded to 26 rows), and the invoice with a shaded boxed table header |
+| Modern | A full-width colour header, a colour table header, striped rows; invoices also highlight the total |
+| Minimal | No fills: the title, table header, and rules use the accent colour |
+
+- **Colour:** one of 10 presets or any colour from the picker. The defaults keep the original look: peach `#FBE3D6` for timesheets and grey `#AAAAAA` for invoices. Header text turns white on dark colours, and pale colours are deepened for lines and text in Minimal.
+- **Defaults per account:** "PDF style defaults" in the profile's invoice details (one for timesheets, one for invoices). Forms start with these selected.
+- **Per export or invoice:** the Export report, Generate invoice, and admin forms each have the picker, and their previews show the result.
 
 ### Profile (`/profile/edit`)
 
-Name, address, hourly rate, currency (default `PHP`), working hours (fixed monthly target or no target, see below), bank details (account name, number, bank name, SWIFT), and invoice due day (1–31, default 5). Address, hourly rate, and the bank fields must be filled in before you can generate an invoice.
+Separate forms, each saved on its own:
+
+- **Profile:** name, address (printed at the top of invoices), and working hours (fixed monthly target or no target, see below).
+- **Invoice details:** client (bill to) name and address, invoice item (default "Consultancy Service"), hourly rate, currency (default `PHP`), default tax rate (default 0%), invoice due day (1–31, default 5), bank details (account name, number, bank name, SWIFT), and PDF style defaults. Address, client, hourly rate, and bank fields are required.
+- **Lock screen:** change the code or auto-lock period (needs the current code or account password).
+- **Password:** change the account password (needs the current password). Other signed-in devices are signed out.
+
+## Admin back office (`/admin`)
+
+A separate area for managing all data, with its own accounts (`Administrator`), sign-in cookie, and layout. App users can't sign in there, and the app's screen lock doesn't apply.
+
+### Access levels
+
+| Level | View | Create | Edit | Delete, reveal bank details, manage administrators |
+| --- | --- | --- | --- | --- |
+| View only | ✓ | | | |
+| View + create | ✓ | ✓ | | |
+| View + edit | ✓ | | ✓ | |
+| View + create + edit | ✓ | ✓ | ✓ | |
+| All access (super admin) | ✓ | ✓ | ✓ | ✓ |
+
+Permissions are checked on the server for every action (`Administrator#can?`). The last super admin can't be removed or downgraded, and nobody can delete their own account. Administrator passwords need at least 10 characters; admin sessions expire after 12 hours.
+
+### Screens
+
+- **Dashboard:** users, active users this month, hours this month, invoices, and users still onboarding; hours logged per month, active users and sign-ups per month, invoices per month with totals per currency, a top-users leaderboard, and the latest timelogs from every user.
+- **Users:** search and paginate (25 per page), with each user's status, this month's hours against their target, timelog and invoice counts, and last log. Inside a user:
+  - **Overview:** that user's charts (the same as their Manage logs page), missed weekdays, last log, invoiced total, recent invoices.
+  - **Timelogs:** a month-by-month timeline with add, edit, and delete, and a timesheet PDF export for any report period and style.
+  - **Invoices:** billed vs logged hours, and the same Generate invoice form as the app (month or custom dates, extra items, tax, style, draft preview), plus preview, download, and delete.
+  - **Details:** edit the account, profile, invoicing, PDF style defaults, and bank details; reset the lock code; sign out everywhere; delete the user (with all their data).
+- **Administrators** (super admins only): create, edit access levels, and remove administrator accounts.
+- **Light / dark skin** toggle in the sidebar, saved in the admin session.
+
+**Masked data:** bank details are always shown partly hidden (e.g. `••••••5678`). Only super admins receive the full values (behind an eye button); for other levels the full values are never sent to the browser. Bank fields on the edit form start empty, and blank fields keep the stored values.
 
 ## How hours are calculated
 
@@ -113,22 +181,33 @@ In both modes a day's hours are split equally between that day's entries, and ad
 | Path | Purpose |
 | --- | --- |
 | `app/models/time_entry.rb` | Entries and the daily hour-splitting logic |
-| `app/models/invoice.rb` | Invoice generation, numbering, and validations |
-| `app/models/user.rb` | Account, profile, and invoice due-date rules |
-| `app/services/time_stats.rb` | Monthly, holiday, activity, and invoice statistics for the charts |
-| `app/views/charts/` | Reusable column chart and meter partials (HTML/CSS, follow the skin) |
+| `app/models/invoice.rb` | Invoice generation and draft previews, numbering, totals, validations |
+| `app/models/invoice_item.rb` | Extra invoice lines (description, quantity, rate) |
+| `app/models/user.rb` | Account, profile, required invoice details, onboarding state, PDF style defaults |
+| `app/models/pdf_style.rb` | PDF designs and accent colours (defaults, presets, contrast) |
+| `app/models/administrator.rb`, `admin_session.rb` | Admin accounts, access levels, admin sessions |
+| `app/services/time_stats.rb` | Per-user monthly, holiday, activity, range, and invoice statistics for the charts |
+| `app/services/admin_stats.rb` | Statistics across all users for the admin |
 | `app/services/report_range.rb` | Turns report params into a date range and label |
-| `app/services/timelog_pdf.rb` | Timelog PDF layout |
-| `app/services/invoice_pdf.rb` | Invoice PDF layout |
+| `app/services/timelog_pdf.rb` | Timesheet PDF in each design |
+| `app/services/invoice_pdf.rb` | Invoice PDF in each design |
+| `app/views/charts/` | Reusable column chart and meter partials (HTML/CSS, follow the skin) |
 | `app/controllers/concerns/authentication.rb` | Session handling |
-| `app/controllers/concerns/screen_lock.rb` | Gates every request behind lock-code setup and the lock screen |
+| `app/controllers/concerns/screen_lock.rb` | Gates every request behind onboarding and the lock screen |
+| `app/controllers/concerns/invoice_generation.rb` | Generate-invoice form handling shared by the app and the admin |
+| `app/controllers/onboardings_controller.rb` | The two onboarding steps |
+| `app/controllers/lock_settings_controller.rb`, `passwords_controller.rb` | Lock settings and password changes from the profile |
+| `app/controllers/admin/` | Admin back office (base controller with sign-in and permission checks) |
 | `app/models/session.rb` | Lock state, server-side auto-lock, failed-attempt limit |
 | `app/controllers/locks_controller.rb` | Lock screen, lock, unlock, and activity heartbeat |
-| `app/controllers/lock_settings_controller.rb` | Set up or change the lock code and auto-lock period |
 | `app/models/theme.rb` | Available skins and the default |
+| `app/javascript/application.js` | Page slide direction and distance |
 | `app/javascript/controllers/idle_lock_controller.js` | Idle timer, Ctrl+Shift+L, cross-tab lock |
 | `app/javascript/controllers/lock_pad_controller.js` | Lock screen keypad and clock |
 | `app/javascript/controllers/theme_controller.js` | Instant skin switching |
+| `app/javascript/controllers/invoice_items_controller.js` | Add/remove extra invoice item rows |
+| `app/javascript/controllers/color_presets_controller.js` | PDF colour swatches |
+| `lib/tasks/admin.rake` | `bin/rails admin:create` |
 
 ## Development
 
@@ -144,16 +223,19 @@ RSpec, with FactoryBot, Capybara + [Cuprite](https://github.com/rubycdp/cuprite)
 
 | Path | Covers |
 | --- | --- |
-| `spec/models` | Validations, lock codes, sessions and auto-lock, hour balancing, invoice generation, daily inspiration and its fallback |
-| `spec/services` | Report periods, timelog and invoice PDF contents, FuelIX client, chart statistics |
+| `spec/models` | Validations, lock codes, sessions and auto-lock, hour balancing, invoice generation and totals, PDF styles, administrator access levels, daily inspiration and its fallback |
+| `spec/services` | Report periods, timesheet and invoice PDF contents and colours in each design, FuelIX client, chart and range statistics |
 | `spec/helpers` | Chart helpers (ticks, percentages, hour/money formatting, masking) |
-| `spec/requests` | Every endpoint: sign in/up/out, screen lock and lock settings, profile, skins, dashboard, logs, reports, invoices, other users' data |
-| `spec/system` | Browser flows: onboarding, quick add, logs CRUD, report period fields and PDF preview, invoice masking, lock screen keypad and shortcut, skins, trivia, mobile layout |
+| `spec/requests` | Every endpoint: sign in/up/out, onboarding, screen lock, lock settings and password, profile forms, skins, dashboard, logs, reports, invoices (extra items, tax, styles, draft preview), other users' data |
+| `spec/requests/admin` | Admin sign-in, permissions per access level, dashboard, users, timelogs, export, invoices, masking, administrators, skin |
+| `spec/system` | Browser flows: onboarding, quick add, logs CRUD, report period fields and PDF preview, invoices (masking, custom dates with extra items, draft preview with a style), lock screen keypad and shortcut, skins, trivia, mobile layout |
 
+- The factory's default user is fully onboarded (invoice details and a lock code). Use the `:without_lock`, `:without_invoice_details`, or `:new_signup` traits for users still onboarding.
+- `pdf_text` and `pdf_colors` (in `spec/support/pdf_helpers.rb`) read a PDF's text and the hex colours it uses.
 - Every example runs at a fixed time (Friday 13 November 2026, 10:00). Tag an example with `at: Time.zone.local(...)` to change it.
 - Tests never call FuelIX: `FUELIX_API_KEY` is cleared and outside network access is blocked; stub it with the helpers in `spec/support/fuelix_helpers.rb`.
 - Browser tests are tagged `:js` (desktop window) or `:mobile` (390×844). Run with `HEADFUL=1` to watch them. Failure screenshots land in `tmp/capybara/`.
-- Not covered: the rate limits on sign-in, unlock, and lock settings (the test cache store is a null store, so they never trigger), the idle timer firing after minutes of real inactivity, and cross-tab lock/unlock messages.
+- Not covered: the rate limits on sign-in, unlock, lock settings, password, and admin sign-in (the test cache store is a null store, so they never trigger), the idle timer firing after minutes of real inactivity, cross-tab lock/unlock messages, and how page transitions look.
 
 ## Deployment
 
@@ -162,4 +244,4 @@ A production `Dockerfile` is included:
     docker build -t timelog .
     docker run -d -p 80:3000 -e RAILS_MASTER_KEY=<value from config/master.key> --name timelog timelog
 
-The app exposes a health check at `/up`.
+After deploying, run `bin/rails db:migrate`, and create the first super admin with `bin/rails admin:create EMAIL=... PASSWORD=... NAME=...` (the development seed doesn't run in production). The app exposes a health check at `/up`.
