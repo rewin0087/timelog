@@ -129,26 +129,33 @@ html:not([data-nav-dir]) main > :nth-child(3) { animation-delay:.12s; }
 html:not([data-nav-dir]) main > :nth-child(n+4) { animation-delay:.18s; }
 
 /* ---------- Page navigation (Turbo + View Transitions) ----------
-   The sidebar stays put; the page flies in from the window edge (right going forward, left going back)
-   while the old page is pushed off the opposite side. The sidebar layer sits on top, so content slides under it. */
-@keyframes page-out-left  { to   { opacity:0; transform:translateX(-45vw) scale(.92); } }
-@keyframes page-in-right  { from { opacity:.4; transform:translateX(100vw) scale(.96); } }
-@keyframes page-out-right { to   { opacity:0; transform:translateX(45vw) scale(.92); } }
-@keyframes page-in-left   { from { opacity:.4; transform:translateX(-100vw) scale(.96); } }
-@keyframes card-cascade   { from { opacity:0; transform:translateX(var(--cascade-x, 60px)); } }
-::view-transition-group(page) { animation-duration:.6s; animation-timing-function:cubic-bezier(.2,.8,.2,1); z-index:1; }
+   A push slide across the whole window: going forward the new page enters from the right edge while the
+   old one leaves past the left edge (reversed going back). Both move together with one easing curve and no
+   fading or scaling; the page box doesn't resize, and cards don't animate inside the moving page.
+   The sidebar layer stays on top, so pages slide underneath it. Same-page reloads (form saves, month
+   paging) cross-fade instead. html[data-nav-dir] is set in application.js. */
+/* --slide (set in application.js) = window width minus the page's left edge: the new page starts exactly at
+   the window's right edge, and a page leaving to the left ends just behind the sidebar, at any screen width. */
+@keyframes slide-in-from-right { from { transform:translateX(var(--slide, 100vw)); } }
+@keyframes slide-out-to-left   { to   { transform:translateX(calc(var(--slide, 100vw) * -1)); } }
+@keyframes slide-in-from-left  { from { transform:translateX(calc(var(--slide, 100vw) * -1)); } }
+@keyframes slide-out-to-right  { to   { transform:translateX(var(--slide, 100vw)); } }
+@keyframes page-fade-out { to { opacity:0; } }
+@keyframes page-fade-in  { from { opacity:0; } }
+::view-transition-group(page) { animation:none; z-index:1; }
 ::view-transition-group(sidebar) { z-index:2; }
-::view-transition-old(page) { animation:page-out-left .42s cubic-bezier(.5,0,.75,0) both; }
-::view-transition-new(page) { animation:page-in-right .6s cubic-bezier(.22,1.15,.36,1) both; }
-html[data-nav-dir=back]::view-transition-old(page) { animation-name:page-out-right; }
-html[data-nav-dir=back]::view-transition-new(page) { animation-name:page-in-left; }
-::view-transition-old(root), ::view-transition-new(root) { animation-duration:.25s; }
-/* Cards trail the page slightly, so each lands a beat after the one before it */
-html[data-nav-dir=back] { --cascade-x:-60px; }
-html[data-nav-dir] main > * { animation:card-cascade .55s cubic-bezier(.22,1.2,.36,1) both; }
-html[data-nav-dir] main > :nth-child(2) { animation-delay:.07s; }
-html[data-nav-dir] main > :nth-child(3) { animation-delay:.14s; }
-html[data-nav-dir] main > :nth-child(n+4) { animation-delay:.2s; }
+::view-transition-image-pair(page) { isolation:auto; }
+::view-transition-old(page), ::view-transition-new(page) {
+  animation-duration:.55s; animation-timing-function:cubic-bezier(.65,0,.35,1); animation-fill-mode:both;
+  mix-blend-mode:normal; will-change:transform;
+}
+::view-transition-old(page) { animation-name:slide-out-to-left; }
+::view-transition-new(page) { animation-name:slide-in-from-right; }
+html[data-nav-dir=back]::view-transition-old(page) { animation-name:slide-out-to-right; }
+html[data-nav-dir=back]::view-transition-new(page) { animation-name:slide-in-from-left; }
+html[data-nav-dir=same]::view-transition-old(page) { animation:page-fade-out .18s ease-out both; }
+html[data-nav-dir=same]::view-transition-new(page) { animation:page-fade-in .22s ease-in both; }
+::view-transition-old(root), ::view-transition-new(root) { animation-duration:.2s; }
 
 /* Lock / unlock: the lock screen drops down from the top edge like a shutter, and lifts back up on unlock */
 @keyframes shutter-down { from { transform:translateY(-100vh); } }
