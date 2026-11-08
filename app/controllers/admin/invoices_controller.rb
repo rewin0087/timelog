@@ -1,10 +1,12 @@
 class Admin::InvoicesController < Admin::BaseController
+  include InvoiceGeneration
+
   before_action :set_user
   before_action -> { require_permission!(:create) }, only: :create
   before_action -> { require_permission!(:destroy) }, only: :destroy
 
   def index
-    @invoices = @user.invoices.order(period_start: :desc)
+    @invoices = @user.invoices.includes(:items).order(period_start: :desc)
     @periods = (0..11).map { |i| Date.current.beginning_of_month.prev_month(i) }
     @invoice_months = TimeStats.new(@user).invoice_months(12)
     @missing = @user.missing_invoice_fields
@@ -12,14 +14,8 @@ class Admin::InvoicesController < Admin::BaseController
   end
 
   def create
-    invoice =
-      if params[:from].present? || params[:to].present?
-        Invoice.generate_for_range(@user, Date.iso8601(params[:from].to_s), Date.iso8601(params[:to].to_s),
-                                   due_date: Date.iso8601(params[:due_date].to_s))
-      else
-        Invoice.generate_for(@user, Date.strptime(params[:period].to_s, "%Y-%m"))
-      end
-    redirect_to admin_user_invoices_path(@user), notice: "Invoice #{invoice.code} for #{invoice.period_label} generated."
+    invoice = generate_invoice_for(@user)
+    redirect_to admin_user_invoices_path(@user), notice: invoice_generated_notice(invoice)
   rescue ActiveRecord::RecordInvalid => e
     redirect_to admin_user_invoices_path(@user), alert: "#{e.record.errors.full_messages.to_sentence}."
   rescue ArgumentError

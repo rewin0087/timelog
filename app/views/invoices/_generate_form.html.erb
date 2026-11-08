@@ -1,0 +1,43 @@
+<%# Generate invoice form shared by the app (Invoices) and the admin (a user's Invoices tab).
+    Locals: url, user, periods, range (Invoice.suggested_range), submit_label (optional). %>
+<% from, to, due = range %>
+<% default_period = Invoice.default_period.strftime("%Y-%m") %>
+<%= form_with url: url, class: "invoice-form", data: { controller: "report-period" } do |f| %>
+  <div class="row">
+    <label class="grow">Billing period
+      <%= select_tag :period, options_for_select(periods.map { |p| [ p.strftime("%B %Y"), p.strftime("%Y-%m") ] } + [ [ "Custom dates…", "custom" ] ], default_period),
+            data: { report_period_target: "period", action: "report-period#toggle" } %>
+    </label>
+    <label data-report-period-target="field" data-periods="custom" hidden>From <%= date_field_tag :from, from, required: true %></label>
+    <label data-report-period-target="field" data-periods="custom" hidden>To <%= date_field_tag :to, to, required: true %></label>
+    <label data-report-period-target="field" data-periods="custom" hidden>Due <%= date_field_tag :due_date, due, required: true %></label>
+  </div>
+  <p class="muted invoice-form-note">
+    <% if user.fixed_target? %>A month bills the <%= fmt_hours(user.monthly_target) %> target; custom dates prorate it by weekdays.<% else %>Bills the hours logged in the period.<% end %>
+    Custom dates must sit in one month and not overlap another invoice. Generating the same period again refreshes it, including its extra items.
+  </p>
+
+  <div class="invoice-extras" data-controller="invoice-items" data-invoice-items-max-value="<%= Invoice::MAX_ITEMS %>" data-invoice-items-currency-value="<%= user.currency %>"
+       data-action="input->invoice-items#refresh">
+    <div class="invoice-extras-head">
+      <h3>Extra items <small>optional</small></h3>
+      <label class="tax-field">Tax rate (%)
+        <%= number_field_tag :tax_rate, user.tax_rate.to_s("F").sub(/\.0\z/, ""), min: 0, max: 100, step: 0.01, title: "Defaults to the tax rate in invoice details" %>
+      </label>
+    </div>
+    <p class="muted" data-invoice-items-target="empty">Add reimbursements, allowances or other charges on top of the <%= user.fixed_target? ? "monthly rate" : "hourly charge" %>.</p>
+    <div class="item-rows" data-invoice-items-target="list"></div>
+    <template data-invoice-items-target="template">
+      <div class="item-row" data-invoice-items-target="row">
+        <label class="item-desc">Description <input type="text" name="items[__INDEX__][description]" maxlength="60" required placeholder="e.g. Equipment allowance"></label>
+        <label class="item-qty">Qty <input type="number" name="items[__INDEX__][quantity]" value="1" min="0.01" step="0.01" required></label>
+        <label class="item-rate">Rate <input type="number" name="items[__INDEX__][rate]" min="0" step="0.01" required placeholder="0.00"></label>
+        <span class="item-total" aria-live="polite"></span>
+        <button type="button" class="item-remove" data-action="invoice-items#remove" aria-label="Remove item">×</button>
+      </div>
+    </template>
+    <button type="button" class="btn btn-secondary btn-sm" data-invoice-items-target="add" data-action="invoice-items#add">+ Add item</button>
+  </div>
+
+  <div class="form-actions"><%= f.submit local_assigns.fetch(:submit_label, "Generate invoice") %></div>
+<% end %>

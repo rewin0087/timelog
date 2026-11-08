@@ -2,7 +2,7 @@
 # blank bank fields on the edit form keep the stored values, so nobody has to see them to save the form.
 class Admin::UsersController < Admin::BaseController
   PER_PAGE = 25
-  DETAIL_FIELDS = %i[name email_address address bill_to_name bill_to_address invoice_item hourly_rate currency
+  DETAIL_FIELDS = %i[name email_address address bill_to_name bill_to_address invoice_item hourly_rate currency tax_rate
                      invoice_due_day hours_mode monthly_hours auto_lock_minutes].freeze
   BANK_FIELDS = %i[bank_account_name bank_account_number bank_name bank_swift].freeze
 
@@ -31,8 +31,8 @@ class Admin::UsersController < Admin::BaseController
     @top_tasks = stats.top_tasks
     @totals = stats.totals
     @missed = stats.missed_weekdays
-    @invoices = @user.invoices.order(period_start: :desc).limit(5)
-    @invoiced = @user.invoices.group(:currency).sum(Arel.sql("hours * rate"))
+    @invoices = @user.invoices.includes(:items).order(period_start: :desc).limit(5)
+    @invoiced = @user.invoices.includes(:items).group_by(&:currency).transform_values { |list| list.sum(&:amount) }
   end
 
   def new

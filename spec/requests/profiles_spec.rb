@@ -63,6 +63,13 @@ RSpec.describe "Profile" do
     expect(user.reload).to have_attributes(hourly_rate: 1500, currency: "USD", invoice_due_day: 10, bank_name: "B")
   end
 
+  it "saves a default tax rate with the invoice details" do
+    patch profile_path, params: { section: "invoice", user: { tax_rate: "12" } }
+    expect(user.reload.tax_rate).to eq(12)
+    patch profile_path, params: { section: "invoice", user: { tax_rate: "101" } }
+    expect(response.body).to include("Tax rate must be less than or equal to 100")
+  end
+
   it "only saves the fields of the submitted form" do
     patch profile_path, params: { section: "profile", user: { name: "Kept", bank_name: "Ignored" } }
     patch profile_path, params: { section: "invoice", user: { bank_name: "Saved", name: "Ignored" } }

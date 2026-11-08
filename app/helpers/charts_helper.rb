@@ -31,6 +31,13 @@ module ChartsHelper
     "#{currency} #{number_with_delimiter(number_with_precision(value, precision: 2))}"
   end
 
+  # "+ 2 extra items · 12% tax" under an invoice's period, when it has either.
+  def invoice_extras_note(invoice)
+    parts = [ (pluralize(invoice.items.size, "extra item") if invoice.items.any?),
+              ("#{number_with_precision(invoice.tax_rate, precision: 2, strip_insignificant_zeros: true)}% tax" if invoice.tax?) ].compact
+    tag.small("+ #{parts.join(' · ')}", class: "invoice-extras-note") if parts.any?
+  end
+
   # Amount hidden behind dots until revealed by the surrounding reveal controller (no per-item button).
   def masked_money(currency, value)
     tag.span(class: "masked", data: { reveal_target: "item" }) do

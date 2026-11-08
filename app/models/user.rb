@@ -15,6 +15,7 @@ class User < ApplicationRecord
   validates :invoice_due_day, numericality: { only_integer: true, in: 1..31 }
   DEFAULT_INVOICE_ITEM = "Consultancy Service"
   validates :invoice_item, presence: true, length: { maximum: 40 }
+  validates :tax_rate, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
 
   # Required on the profile and in onboarding (saved with `context: :invoice_details`), but not at sign-up.
   INVOICE_FIELDS = {

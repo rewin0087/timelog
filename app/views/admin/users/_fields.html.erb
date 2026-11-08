@@ -29,6 +29,7 @@
     <label>Hourly rate <%= f.number_field :hourly_rate, step: 0.01, min: 0.01 %></label>
     <label>Currency <%= f.text_field :currency, maxlength: 3, required: true %></label>
     <label>Invoice due day <%= f.number_field :invoice_due_day, min: 1, max: 31, required: true %></label>
+    <label>Default tax rate (%) <%= f.number_field :tax_rate, min: 0, max: 100, step: 0.01, required: true %></label>
   </div>
 </fieldset>
 <fieldset class="admin-fieldset sensitive" <%= "disabled" if locked %>>

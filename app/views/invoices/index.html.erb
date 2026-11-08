@@ -3,22 +3,8 @@
 
 <section class="card">
   <h2>Generate invoice</h2>
-  <p class="muted">Dated the last day of the month, due on day <%= Current.user.invoice_due_day %> of the following month (change it in your <%= link_to "profile", edit_profile_path %>). <% if Current.user.fixed_target? %>Always bills your fixed <%= fmt_hours(Current.user.monthly_target) %> at your hourly rate, regardless of what is logged.<% else %>Bills the hours you logged (<%= User::DAILY_HOURS %>h per logged weekday) at your hourly rate.<% end %> Generating again for the same month refreshes it.</p>
-  <%= form_with url: invoices_path, class: "row" do |f| %>
-    <%= select_tag :period, options_for_select(@periods.map { |d| [d.strftime("%B %Y"), d.strftime("%Y-%m")] }, @default_period.strftime("%Y-%m")) %>
-    <%= f.submit "Generate invoice" %>
-  <% end %>
-</section>
-
-<section class="card">
-  <h2>Generate invoice for custom dates</h2>
-  <p class="muted">Bills part of a month: <% if Current.user.fixed_target? %>your <%= fmt_hours(Current.user.monthly_target) %> monthly target is prorated by the weekdays in the range (e.g. 11 of 22 weekdays = half).<% else %>the hours you logged in the range.<% end %> Both dates must be in the same month and must not overlap an existing invoice. Dated the end date and due on the due date you pick, which can't be earlier than the end date. Generating again for the same dates refreshes it.</p>
-  <%= form_with url: invoices_path, class: "row" do |f| %>
-    <label>From <%= date_field_tag :from, @range_from, required: true %></label>
-    <label>To <%= date_field_tag :to, @range_to, required: true %></label>
-    <label>Due <%= date_field_tag :due_date, @range_due, required: true %></label>
-    <%= f.submit "Generate custom invoice" %>
-  <% end %>
+  <p class="muted">Dated the last day of the period and due on day <%= Current.user.invoice_due_day %> of the following month (change it in your <%= link_to "profile", edit_profile_path(anchor: "invoice-details") %>), or on the due date you pick for custom dates. <% if Current.user.fixed_target? %>A month always bills your fixed <%= fmt_hours(Current.user.monthly_target) %> at your hourly rate.<% else %>Bills the hours you logged (<%= User::DAILY_HOURS %>h per logged weekday) at your hourly rate.<% end %></p>
+  <%= render "invoices/generate_form", url: invoices_path, user: Current.user, periods: @periods, range: [ @range_from, @range_to, @range_due ] %>
 </section>
 
 <section class="card">
@@ -32,7 +18,7 @@
         <% @invoices.each do |i| %>
           <tr>
             <td class="cell-main"><%= i.code %></td>
-            <td data-label="Period"><%= i.period_label %><% unless i.full_month? %> <span class="muted">(custom)</span><% end %></td>
+            <td data-label="Period"><%= i.period_label %><% unless i.full_month? %> <span class="muted">(custom)</span><% end %><%= invoice_extras_note(i) %></td>
             <td data-label="Date"><%= i.invoice_date.strftime("%d %b %Y") %></td>
             <td data-label="Due"><%= i.due_date.strftime("%d %b %Y") %></td>
             <td class="num" data-label="Hours"><%= number_with_precision(i.hours, precision: 2) %></td>

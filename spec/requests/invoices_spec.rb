@@ -10,7 +10,9 @@ RSpec.describe "Invoices" do
       get invoices_path
       html = Nokogiri::HTML(response.body)
       expect(html.at_css("select#period option[selected]")["value"]).to eq("2026-10")
-      expect(html.css("select#period option").size).to eq(12)
+      expect(html.css("select#period option").map(&:text)).to include("October 2026", "Custom dates…")
+      expect(html.css("select#period option").size).to eq(13)
+      expect(html.at_css("input#tax_rate")["value"]).to eq("0")
       expect(html.at_css("input#from")["value"]).to eq("2026-11-01")
       expect(html.at_css("input#to")["value"]).to eq("2026-11-13")
       expect(html.at_css("input#due_date")["value"]).to eq("2026-12-05")
@@ -87,6 +89,45 @@ RSpec.describe "Invoices" do
       user.update!(hourly_rate: nil)
       expect { post invoices_path, params: { period: "2026-10" } }.not_to change(Invoice, :count)
       expect(response).to redirect_to(onboarding_path)
+    end
+  end
+
+  describe "extra items and tax" do
+    it "generates a month invoice with extra items and a tax override" do
+      post invoices_path, params: { period: "2026-10", tax_rate: "12",
+                                    items: { "0" => { description: "Equipment allowance", quantity: "1", rate: "5000" },
+                                             "1" => { description: "Internet reimbursement", quantity: "2", rate: "1500" },
+                                             "2" => { description: "", quantity: "", rate: "" } } }
+      invoice = user.invoices.last
+      expect(flash[:notice]).to eq("Invoice INV-001 for October 2026 generated with 2 extra items and 12% tax.")
+      expect(invoice.items.map(&:description)).to eq([ "Equipment allowance", "Internet reimbursement" ])
+      expect(invoice).to have_attributes(service_amount: 160_000, items_amount: 8_000, subtotal: 168_000, tax_amount: 20_160, amount: 188_160)
+    end
+
+    it "goes by the selected period even when hidden custom dates are submitted" do
+      post invoices_path, params: { period: "2026-10", from: "2026-11-01", to: "2026-11-13", due_date: "2026-12-05" }
+      expect(user.invoices.last).to have_attributes(period_start: Date.new(2026, 10, 1), period_end: Date.new(2026, 10, 31))
+    end
+
+    it "uses the profile tax rate by default and for custom dates" do
+      user.update!(tax_rate: 5)
+      post invoices_path, params: { period: "custom", from: "2026-11-02", to: "2026-11-06", due_date: "2026-11-20", tax_rate: "" }
+      expect(user.invoices.last.tax_rate).to eq(5)
+    end
+
+    it "explains invalid extra items and keeps nothing" do
+      post invoices_path, params: { period: "2026-10", items: { "0" => { description: "", quantity: "1", rate: "100" } } }
+      expect(flash[:alert]).to include("Extra item 1: description can't be blank")
+      expect(user.invoices).to be_empty
+      post invoices_path, params: { period: "2026-10", tax_rate: "150" }
+      expect(flash[:alert]).to include("Tax rate must be less than or equal to 100")
+    end
+
+    it "replaces the extra items when the same period is generated again" do
+      post invoices_path, params: { period: "2026-10", items: { "0" => { description: "Old", quantity: "1", rate: "10" } } }
+      post invoices_path, params: { period: "2026-10", items: { "0" => { description: "New", quantity: "1", rate: "20" } } }
+      expect(user.invoices.count).to eq(1)
+      expect(user.invoices.last.items.map(&:description)).to eq([ "New" ])
     end
   end
 

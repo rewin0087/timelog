@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_110000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_08_120000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -48,6 +48,17 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_110000) do
     t.index ["day"], name: "index_daily_inspirations_on_day", unique: true
   end
 
+  create_table "invoice_items", force: :cascade do |t|
+    t.bigint "invoice_id", null: false
+    t.string "description", null: false
+    t.decimal "quantity", precision: 10, scale: 2, default: "1.0", null: false
+    t.decimal "rate", precision: 12, scale: 2, null: false
+    t.integer "position", default: 0, null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["invoice_id"], name: "index_invoice_items_on_invoice_id"
+  end
+
   create_table "invoices", force: :cascade do |t|
     t.bigint "user_id", null: false
     t.integer "number", null: false
@@ -61,6 +72,7 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_110000) do
     t.datetime "updated_at", null: false
     t.date "period_start", null: false
     t.date "period_end", null: false
+    t.decimal "tax_rate", precision: 5, scale: 2, default: "0.0", null: false
     t.index ["user_id", "number"], name: "index_invoices_on_user_id_and_number", unique: true
     t.index ["user_id", "period"], name: "index_invoices_on_user_id_and_period"
     t.index ["user_id", "period_start"], name: "index_invoices_on_user_id_and_period_start", unique: true
@@ -112,10 +124,12 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_110000) do
     t.string "bill_to_name"
     t.text "bill_to_address"
     t.string "invoice_item", default: "Consultancy Service", null: false
+    t.decimal "tax_rate", precision: 5, scale: 2, default: "0.0", null: false
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
   add_foreign_key "admin_sessions", "administrators"
+  add_foreign_key "invoice_items", "invoices"
   add_foreign_key "invoices", "users"
   add_foreign_key "sessions", "users"
   add_foreign_key "time_entries", "users"

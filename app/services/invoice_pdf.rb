@@ -7,9 +7,13 @@ class InvoicePdf
   LEFT = 73
   COLS = [73, 196, 260, 343, 443, 549].freeze
 
+  ROW_H = 20 # height of each extra item row; everything below the table moves down by this per item
+
   def initialize(invoice)
     @invoice = invoice
     @user = invoice.user
+    @items = invoice.items.to_a
+    @shift = @items.size * ROW_H
   end
 
   def render
@@ -71,27 +75,37 @@ class InvoicePdf
     text num(@invoice.hours), COLS[1] + 15, y, size: 10
     text "1", COLS[2], y, size: 10, width: 58, align: :right
     text money(@invoice.rate), COLS[3], y, size: 10, width: COLS[4] - COLS[3], align: :center
-    text money(@invoice.amount), COLS[4], y, size: 10, width: COLS[5] - COLS[4], align: :center
+    text money(@invoice.service_amount), COLS[4], y, size: 10, width: COLS[5] - COLS[4], align: :center
+
+    # Extra items (reimbursements, allowances...) below the hours line, after the part-month label.
+    @items.each_with_index do |item, i|
+      row = y + 32 + i * ROW_H
+      text item.description, COLS[0], row, size: 10, width: COLS[1] - COLS[0] - 4, height: 12
+      text num(item.quantity), COLS[2], row, size: 10, width: 58, align: :right
+      text money(item.rate), COLS[3], row, size: 10, width: COLS[4] - COLS[3], align: :center
+      text money(item.amount), COLS[4], row, size: 10, width: COLS[5] - COLS[4], align: :center
+    end
   end
 
   def totals
-    [["Subtotal:", money(@invoice.amount), 430],
-     ["Tax (0%):", "#{@invoice.currency} 0.00", 447],
+    [["Subtotal:", money(@invoice.subtotal), 430],
+     ["Tax (#{num(@invoice.tax_rate)}%):", @invoice.tax? ? money(@invoice.tax_amount) : "#{@invoice.currency} 0.00", 447],
      ["Total:", money(@invoice.amount), 464]].each do |label, value, y|
-      text label, 330, y, size: 10
-      text value, 457, y, size: 10
+      text label, 330, y + @shift, size: 10, style: (:bold if label == "Total:")
+      text value, 457, y + @shift, size: 10, style: (:bold if label == "Total:")
     end
   end
 
   def bank_details
-    text "Bank Details:", LEFT, 499, size: 10
-    [["Bank Account Name:", @user.bank_account_name, 533],
-     ["Account Number:", @user.bank_account_number, 550],
-     ["Bank Name :", @user.bank_name, 567],
-     ["SWIFT:", @user.bank_swift, 584]].each do |label, value, y|
-      text "#{label} <b>#{escape(value)}</b>", LEFT, y, size: 10.5, inline: true, width: 470
+    top = 499 + @shift
+    text "Bank Details:", LEFT, top, size: 10
+    [["Bank Account Name:", @user.bank_account_name, 34],
+     ["Account Number:", @user.bank_account_number, 51],
+     ["Bank Name :", @user.bank_name, 68],
+     ["SWIFT:", @user.bank_swift, 85]].each do |label, value, dy|
+      text "#{label} <b>#{escape(value)}</b>", LEFT, top + dy, size: 10.5, inline: true, width: 470
     end
-    text "Payment Method: Bank Transfer", LEFT, 601, size: 10.5
+    text "Payment Method: Bank Transfer", LEFT, top + 102, size: 10.5
   end
 
   # Pass height to keep long text on one line (it shrinks to fit instead of wrapping).

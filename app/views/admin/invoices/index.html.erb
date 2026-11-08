@@ -1,40 +1,27 @@
 <%= render "admin/users/header", user: @user %>
-<div class="chart-grid-2">
-  <section class="card">
-    <h2>Billed vs logged <small>last 12 months</small></h2>
-    <% bars = @invoice_months.map do |m|
-         { label: m[:month].strftime("%b"), sub: (m[:month].year if m[:month].month == 1 || m == @invoice_months.first),
-           aria: "#{m[:month].strftime('%B %Y')}: #{fmt_hours(m[:billed_hours])} billed, #{fmt_hours(m[:logged_hours])} logged",
-           tip: safe_join([ tag.strong(m[:month].strftime("%B %Y")), "#{fmt_hours(m[:billed_hours])} billed", "#{fmt_hours(m[:logged_hours])} logged",
-                            (fmt_money(m[:currency], m[:amount]) if m[:invoices].positive?) ].compact, tag.br),
-           series: [ { value: m[:billed_hours], tone: "accent" }, { value: m[:logged_hours], tone: "soft" } ] }
-       end %>
-    <%= render "charts/columns", bars: bars, legend: [ [ "accent", "Billed" ], [ "soft", "Logged" ] ], title: "Hours billed and logged per month" %>
-  </section>
-  <section class="card">
-    <h2>Generate invoice</h2>
-    <% if @missing.any? %>
-      <p class="flash alert">Can't generate yet. Missing: <%= @missing.to_sentence %>.</p>
-    <% elsif can?(:create) %>
-      <h3 class="form-divider">Whole month</h3>
-      <p class="muted">Creates or refreshes the invoice for a month, exactly as <%= @user.name.split.first %> would from the app.</p>
-      <%= form_with url: admin_user_invoices_path(@user), class: "row" do |f| %>
-        <label class="grow">Month <%= select_tag :period, options_for_select(@periods.map { |p| [ p.strftime("%B %Y"), p.strftime("%Y-%m") ] }, Invoice.default_period.strftime("%Y-%m")) %></label>
-        <%= f.submit "Generate invoice" %>
-      <% end %>
-      <h3 class="form-divider">Custom dates</h3>
-      <p class="muted">Bills part of a month: <% if @user.fixed_target? %>the <%= fmt_hours(@user.monthly_target) %> target prorated by weekdays in the range<% else %>the hours logged in the range<% end %>. Both dates in the same month, no overlap with another invoice, due on or after the end date.</p>
-      <%= form_with url: admin_user_invoices_path(@user), class: "row" do |f| %>
-        <label>From <%= date_field_tag :from, @range_from, required: true %></label>
-        <label>To <%= date_field_tag :to, @range_to, required: true %></label>
-        <label>Due <%= date_field_tag :due_date, @range_due, required: true %></label>
-        <%= f.submit "Generate custom invoice" %>
-      <% end %>
-    <% else %>
-      <p class="muted">Your access level can't generate invoices.</p>
-    <% end %>
-  </section>
-</div>
+<section class="card">
+  <h2>Generate invoice</h2>
+  <% if @missing.any? %>
+    <p class="flash alert">Can't generate yet. Missing: <%= @missing.to_sentence %>.</p>
+  <% elsif can?(:create) %>
+    <p class="muted">Exactly as <%= @user.name.split.first %> would from the app, with optional extra items and tax.</p>
+    <%= render "invoices/generate_form", url: admin_user_invoices_path(@user), user: @user, periods: @periods, range: [ @range_from, @range_to, @range_due ] %>
+  <% else %>
+    <p class="muted">Your access level can't generate invoices.</p>
+  <% end %>
+</section>
+
+<section class="card">
+  <h2>Billed vs logged <small>last 12 months</small></h2>
+  <% bars = @invoice_months.map do |m|
+       { label: m[:month].strftime("%b"), sub: (m[:month].year if m[:month].month == 1 || m == @invoice_months.first),
+         aria: "#{m[:month].strftime('%B %Y')}: #{fmt_hours(m[:billed_hours])} billed, #{fmt_hours(m[:logged_hours])} logged",
+         tip: safe_join([ tag.strong(m[:month].strftime("%B %Y")), "#{fmt_hours(m[:billed_hours])} billed", "#{fmt_hours(m[:logged_hours])} logged",
+                          (fmt_money(m[:currency], m[:amount]) if m[:invoices].positive?) ].compact, tag.br),
+         series: [ { value: m[:billed_hours], tone: "accent" }, { value: m[:logged_hours], tone: "soft" } ] }
+     end %>
+  <%= render "charts/columns", bars: bars, legend: [ [ "accent", "Billed" ], [ "soft", "Logged" ] ], title: "Hours billed and logged per month" %>
+</section>
 
 <section class="card">
   <h2>Invoices <small><%= pluralize(@invoices.size, "invoice") %></small></h2>
@@ -47,7 +34,7 @@
         <% @invoices.each do |i| %>
           <tr>
             <td class="cell-main"><%= i.code %></td>
-            <td data-label="Period"><%= i.period_label %><% unless i.full_month? %> <span class="muted">(custom)</span><% end %></td>
+            <td data-label="Period"><%= i.period_label %><% unless i.full_month? %> <span class="muted">(custom)</span><% end %><%= invoice_extras_note(i) %></td>
             <td data-label="Date"><%= i.invoice_date.strftime("%d %b %Y") %></td>
             <td data-label="Due"><%= i.due_date.strftime("%d %b %Y") %></td>
             <td class="num" data-label="Hours"><%= number_with_precision(i.hours, precision: 2) %></td>

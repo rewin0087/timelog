@@ -1,6 +1,8 @@
 class InvoicesController < ApplicationController
+  include InvoiceGeneration
+
   def index
-    @invoices = Current.user.invoices.order(period_start: :desc)
+    @invoices = Current.user.invoices.includes(:items).order(period_start: :desc)
     @default_period = Invoice.default_period
     @periods = (0..11).map { |i| Date.current.beginning_of_month.prev_month(i) }
     @range_from, @range_to, @range_due = Invoice.suggested_range(Current.user)
@@ -8,14 +10,8 @@ class InvoicesController < ApplicationController
   end
 
   def create
-    invoice =
-      if params[:from].present? || params[:to].present?
-        Invoice.generate_for_range(Current.user, Date.iso8601(params[:from].to_s), Date.iso8601(params[:to].to_s),
-                                   due_date: Date.iso8601(params[:due_date].to_s))
-      else
-        Invoice.generate_for(Current.user, Date.strptime(params[:period].to_s, "%Y-%m"))
-      end
-    redirect_to invoices_path, notice: "Invoice #{invoice.code} for #{invoice.period_label} generated."
+    invoice = generate_invoice_for(Current.user)
+    redirect_to invoices_path, notice: invoice_generated_notice(invoice)
   rescue ActiveRecord::RecordInvalid => e
     redirect_to invoices_path, alert: "#{e.record.errors.full_messages.to_sentence}."
   rescue ArgumentError

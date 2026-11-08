@@ -157,6 +157,22 @@ RSpec.describe "Admin users" do
       expect(flash[:notice]).to include("2–6 November 2026")
     end
 
+    it "generates an invoice with extra items and tax for the user" do
+      user.update!(tax_rate: 8)
+      get admin_user_invoices_path(user)
+      expect(Nokogiri::HTML(response.body).at_css("input#tax_rate")["value"]).to eq("8")
+      post admin_user_invoices_path(user), params: { period: "2026-10", tax_rate: "0", items: { "0" => { description: "Laptop allowance", quantity: "1", rate: "3000" } } }
+      invoice = user.invoices.last
+      expect(invoice).to have_attributes(tax_rate: 0, amount: 163_000)
+      get admin_user_invoices_path(user)
+      expect(response.body).to include("+ 1 extra item", "PHP 163,000.00")
+    end
+
+    it "saves a user's default tax rate" do
+      patch admin_user_path(user), params: { user: { tax_rate: "12.5" } }
+      expect(user.reload.tax_rate).to eq(12.5)
+    end
+
     it "explains invalid custom ranges" do
       post admin_user_invoices_path(user), params: { from: "2026-10-28", to: "2026-11-03", due_date: "2026-11-20" }
       expect(flash[:alert]).to include("same month")

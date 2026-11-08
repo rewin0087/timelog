@@ -18,6 +18,19 @@ RSpec.describe InvoicePdf do
     expect(text).not_to include("Consultancy Service")
   end
 
+  it "lists extra items and applies the tax rate to the total" do
+    invoice = Invoice.generate_for(user, Date.new(2026, 10, 1), tax_rate: 10,
+                                   items: [ { description: "Equipment allowance", quantity: 1, rate: 5000 }, { description: "Travel", quantity: 2, rate: 1000 } ])
+    text = pdf_text(InvoicePdf.new(invoice).render)
+    expect(text).to include("Consultancy Service", "P160,000", "Equipment allowance", "P5,000", "Travel", "P2,000")
+    expect(text).to include("Subtotal:", "P167,000", "Tax (10%):", "P16,700", "Total:", "P183,700", "PHP 183,700")
+  end
+
+  it "shows zero tax by default" do
+    text = pdf_text(InvoicePdf.new(Invoice.generate_for(user, Date.new(2026, 10, 1))).render)
+    expect(text).to include("Tax (0%):", "PHP 0.00")
+  end
+
   it "shows the period for a part-month invoice" do
     invoice = Invoice.generate_for_range(user, Date.new(2026, 10, 1), Date.new(2026, 10, 15))
     expect(pdf_text(InvoicePdf.new(invoice).render)).to include("1–15 October 2026")

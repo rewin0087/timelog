@@ -1,7 +1,7 @@
 # The profile page has separate forms (profile, invoice details, lock screen, password); each saves on its own.
 class ProfilesController < ApplicationController
   PROFILE_FIELDS = %i[name address hours_mode monthly_hours].freeze
-  INVOICE_FIELDS = %i[bill_to_name bill_to_address invoice_item hourly_rate currency invoice_due_day
+  INVOICE_FIELDS = %i[bill_to_name bill_to_address invoice_item hourly_rate currency invoice_due_day tax_rate
                       bank_account_name bank_account_number bank_name bank_swift].freeze
   # Onboarding asks for both at once.
   ALL_FIELDS = (PROFILE_FIELDS + INVOICE_FIELDS).freeze

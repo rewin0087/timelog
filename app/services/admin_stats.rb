@@ -41,7 +41,7 @@ class AdminStats
 
   # Invoices per month with amounts per currency, oldest first.
   def invoices(count = 12)
-    list = Invoice.where(period: first_month(count)..today.end_of_month).to_a.group_by(&:period)
+    list = Invoice.includes(:items).where(period: first_month(count)..today.end_of_month).to_a.group_by(&:period)
     month_list(count).map do |m|
       rows = list.fetch(m, [])
       { month: m, count: rows.size, amounts: rows.group_by(&:currency).transform_values { |r| r.sum(&:amount) } }

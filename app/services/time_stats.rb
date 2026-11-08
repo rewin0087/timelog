@@ -122,7 +122,7 @@ class TimeStats
   # Partial invoices in the same month are added together.
   def invoice_months(count = 12)
     first = today.prev_month(count - 1).beginning_of_month
-    invoices = user.invoices.where(period: first..today.end_of_month).to_a.group_by(&:period)
+    invoices = user.invoices.includes(:items).where(period: first..today.end_of_month).to_a.group_by(&:period)
     logged = months(first, today).index_by(&:month)
     month_list(first, today.beginning_of_month).map do |month|
       list = invoices.fetch(month, [])

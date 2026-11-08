@@ -1,10 +1,15 @@
 class Invoice < ApplicationRecord
   MONTHLY_HOURS = User::DEFAULT_MONTHLY_HOURS
 
+  MAX_ITEMS = 8 # what fits on the one-page PDF
+
   belongs_to :user
+  has_many :items, -> { order(:position, :id) }, class_name: "InvoiceItem", inverse_of: :invoice, dependent: :delete_all, validate: false
 
   validates :number, :period, :period_start, :period_end, :invoice_date, :due_date, :currency, presence: true
   validates :hours, :rate, numericality: { greater_than_or_equal_to: 0 }
+  validates :tax_rate, numericality: { greater_than_or_equal_to: 0, less_than_or_equal_to: 100 }
+  validate :items_valid
   validate :range_within_one_month, :no_overlap, if: -> { period_start && period_end }
   validate :due_after_invoice_date, if: -> { due_date && invoice_date }
   validate :hours_logged, if: -> { user&.no_target? && hours&.zero? }
@@ -12,15 +17,17 @@ class Invoice < ApplicationRecord
   scope :overlapping, ->(from, to) { where("period_start <= ? AND period_end >= ?", to, from) }
 
   # Creates (or refreshes) the invoice for the whole month containing `month`.
-  def self.generate_for(user, month)
-    generate_for_range(user, month.beginning_of_month, month.end_of_month)
+  def self.generate_for(user, month, **options)
+    generate_for_range(user, month.beginning_of_month, month.end_of_month, **options)
   end
 
   # Creates (or refreshes) the invoice for `from`..`to`, which must sit inside one month.
   # Hours come from Invoice.hours_for (the user's monthly target, or what was logged with no target).
   # Dated the last day of the range. Due on `due_date` when given, otherwise on the user's
   # configured due day of the following month.
-  def self.generate_for_range(user, from, to, due_date: nil)
+  # `items` are optional extra lines ({ description:, quantity:, rate: }); they replace any the invoice had.
+  # `tax_rate` (percent) defaults to the user's tax rate.
+  def self.generate_for_range(user, from, to, due_date: nil, items: [], tax_rate: nil)
     invoice = user.invoices.find_or_initialize_by(period_start: from, period_end: to)
     invoice.assign_attributes(
       period: from.beginning_of_month,
@@ -28,10 +35,16 @@ class Invoice < ApplicationRecord
       due_date: due_date || user.invoice_due_date_after(to),
       hours: hours_for(user, from, to),
       rate: user.hourly_rate,
-      currency: user.currency
+      currency: user.currency,
+      tax_rate: tax_rate.presence || user.tax_rate
     )
     invoice.number ||= (user.invoices.maximum(:number) || 0) + 1
-    invoice.save!
+    transaction do
+      invoice.items.delete_all if invoice.persisted?
+      invoice.items.reset
+      items.each_with_index { |item, i| invoice.items.build(item.to_h.symbolize_keys.slice(:description, :quantity, :rate).merge(position: i)) }
+      invoice.save!
+    end
     invoice
   end
 
@@ -60,7 +73,13 @@ class Invoice < ApplicationRecord
 
   def full_month? = period_start == period.beginning_of_month && period_end == period.end_of_month
   def code = format("INV-%03d", number)
-  def amount = (hours * rate).round(2)
+  # The hours charge (hours x rate), then extra items, tax, and the total due.
+  def service_amount = (hours * rate).round(2)
+  def items_amount = items.sum(&:amount)
+  def subtotal = service_amount + items_amount
+  def tax_amount = (subtotal * tax_rate / 100).round(2)
+  def amount = subtotal + tax_amount
+  def tax? = tax_rate.positive?
 
   def period_label
     return period.strftime("%B %Y") if full_month?
@@ -73,6 +92,14 @@ class Invoice < ApplicationRecord
   end
 
   private
+
+  def items_valid
+    errors.add(:base, "Up to #{MAX_ITEMS} extra items fit on an invoice") if items.size > MAX_ITEMS
+    items.each_with_index do |item, i|
+      next if item.valid?
+      errors.add(:base, "Extra item #{i + 1}: #{item.errors.full_messages.to_sentence.downcase}")
+    end
+  end
 
   def range_within_one_month
     if period_start > period_end
