@@ -103,15 +103,17 @@ RSpec.describe "Invoices" do
       expect(page).to have_css("details.customize:not([open])")
       expect(page).to have_no_css(".customize-badge", visible: :visible)
       find("summary", text: "Customize").click
-      select "Modern: full-width colour header, striped rows", from: "Design"
+      find(".pdf-design-card", text: "Aurora").click
+      expect(page).to have_checked_field("design", with: "aurora", visible: :all)
       find(".pdf-swatch[title='Teal']").click
       expect(page).to have_css(".pdf-swatch.active[title='Teal']")
+      expect(page).to have_css(".pdf-style[style*='--pdf-accent: #0f766e']") # card previews take the colour
       expect(page).to have_css(".customize-badge", text: "Customized", visible: :visible)
       click_on "Preview PDF"
       within("dialog.pdf-modal[open]") do
         expect(page).to have_content("Invoice preview (not saved yet)")
         src = find("iframe", visible: :all)[:src]
-        expect(src).to include("/invoices/preview", "design=modern", "color=%230f766e", "inline=1")
+        expect(src).to include("/invoices/preview", "design=aurora", "color=%230f766e", "inline=1")
         expect(src).not_to include("authenticity_token")
       end
       expect(user.invoices.count).to eq(1)

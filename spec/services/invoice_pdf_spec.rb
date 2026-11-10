@@ -35,7 +35,8 @@ RSpec.describe InvoicePdf do
     PdfStyle::DESIGNS.each_key do |design|
       invoice = Invoice.generate_for(user, Date.new(2026, 10, 1), design:, color: "#0F766E")
       pdf = InvoicePdf.new(invoice).render
-      expect(pdf_text(pdf)).to include("INVOICE", "Consultancy Service", "Total:"), design
+      expect(pdf_text(pdf)).to include("Consultancy Service", "Total:", "INV-001"), design
+      expect(pdf_text(pdf).upcase).to include("INVOICE"), design # Elegant sets it as "Invoice"
       expect(pdf_colors(pdf)).to include("0F766E"), design
     end
   end

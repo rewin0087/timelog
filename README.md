@@ -127,17 +127,22 @@ When the period has logs, an overview sits above the entries: hours logged vs ex
 
 ### PDF designs and colours
 
-Timesheets and invoices can be generated in three designs (`PdfStyle::DESIGNS`), each with an accent colour for the header and table-header backgrounds:
+Timesheets and invoices can be generated in eight designs (`PdfStyle::DESIGNS`), each with an accent colour for the header and table-header backgrounds:
 
 | Design | Look |
 | --- | --- |
 | Classic (default) | The original templates: a boxed timesheet with a shaded title band (padded to 26 rows), and the invoice with a shaded boxed table header |
 | Modern | A full-width colour header, a colour table header, striped rows; invoices also highlight the total |
 | Minimal | No fills: the title, table header, and rules use the accent colour |
+| Elegant | Times serif type, a centred title (an italic "Invoice") between fine double rules, a tinted table header |
+| Bold | A colour band down the left edge, an oversized title, a colour total bar |
+| Executive | A deep header band with an accent stripe (timesheets show total hours in it), a page footer; invoices box the total |
+| Aurora | A two-tone gradient header from the accent to a hue-shifted partner, soft striped rows |
+| Typewriter | Courier type, form-style labels and dashed rules |
 
-- **Colour:** one of 10 presets or any colour from the picker. The defaults keep the original look: peach `#FBE3D6` for timesheets and grey `#AAAAAA` for invoices. Header text turns white on dark colours, and pale colours are deepened for lines and text in Minimal.
+- **Colour:** one of 10 presets or any colour from the picker. The defaults keep the original look: peach `#FBE3D6` for timesheets and grey `#AAAAAA` for invoices. Header text turns white on dark colours, pale colours are deepened for lines and text (Minimal, Elegant, Typewriter), and the Executive and Aurora shades are derived from the accent so text stays readable.
 - **Defaults per account:** "PDF style defaults" in the profile's invoice details (one for timesheets, one for invoices). Forms start with these selected.
-- **Per export or invoice:** the Export report, Generate invoice, and admin forms each have the picker, and their previews show the result.
+- **Per export or invoice:** the Export report, Generate invoice, and admin forms each have the picker: design cards with a mini preview tinted in the chosen colour. The PDF previews show the result.
 
 ### Profile (`/profile/edit`)
 

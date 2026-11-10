@@ -1031,8 +1031,56 @@ body.admin[data-theme=violet] .admin-card.is-god { background:linear-gradient(16
 
 /* PDF design + colour picker (shared/_pdf_style_fields) */
 .pdf-style { grid-column:1 / -1; display:flex; flex-wrap:wrap; gap:14px 24px; align-items:flex-end; }
-.pdf-design { display:flex; flex-direction:column; gap:6px; font-weight:600; font-size:14px; min-width:min(320px, 100%); }
-.row .pdf-design, .invoice-form .pdf-design { font-size:13px; color:var(--muted); }
+.pdf-design { flex:1 1 100%; min-width:0; margin:0; padding:0; border:0; }
+.pdf-design legend { padding:0; margin-bottom:6px; font-weight:600; font-size:13px; color:var(--muted); }
+.pdf-designs { display:grid; grid-template-columns:repeat(auto-fill, minmax(118px, 1fr)); gap:10px; }
+.pdf-design-card { position:relative; display:flex; flex-direction:column; gap:2px; padding:8px; border:1px solid var(--line); border-radius:12px; background:var(--surface); cursor:pointer; transition:border-color .15s, box-shadow .15s, transform .15s; }
+.pdf-design-card:hover { transform:translateY(-1px); border-color:color-mix(in srgb, var(--accent) 45%, var(--line)); }
+.pdf-design-card:has(:checked) { border-color:var(--accent); box-shadow:0 0 0 2px color-mix(in srgb, var(--accent) 30%, transparent); }
+.pdf-design-card:has(:focus-visible) { outline:2px solid var(--accent); outline-offset:2px; }
+.pdf-design-radio { position:absolute; opacity:0; pointer-events:none; }
+.pdf-design-name { font-weight:600; font-size:13px; color:var(--fg); margin-top:4px; }
+.pdf-design-desc { font-size:11px; line-height:1.3; color:var(--muted); }
+
+/* Mini page previews: b = title, i = rows, u = total. The paper stays white in dark mode, like the PDF. */
+.pdf-thumb { --a:var(--pdf-accent, #4f46e5); --t:color-mix(in srgb, var(--a) 22%, #fff); --d:color-mix(in srgb, var(--a) 38%, #000);
+  position:relative; display:flex; flex-direction:column; gap:3px; height:84px; padding:8px 9px; border-radius:6px; background:#fff;
+  box-shadow:0 1px 3px rgba(15,23,42,.18); overflow:hidden; }
+.pdf-thumb b { display:block; height:16px; margin-bottom:3px; border-radius:2px; background:var(--a); }
+.pdf-thumb i { display:block; height:5px; border-radius:1px; background:#e7e7ec; }
+.pdf-thumb i:first-of-type { background:var(--a); }
+.pdf-thumb u { display:block; height:6px; margin-top:auto; border-top:1.5px solid #333; }
+.pdf-thumb-classic b { border:1.5px solid #222; border-radius:0; }
+.pdf-thumb-classic i { background:none; border:1px solid #444; height:6px; }
+.pdf-thumb-classic i:first-of-type { background:var(--a); }
+.pdf-thumb-modern b { margin:-8px -9px 3px; height:22px; border-radius:0 0 6px 6px; }
+.pdf-thumb-modern i:nth-of-type(odd):not(:first-of-type) { background:var(--t); }
+.pdf-thumb-minimal b { background:none; height:12px; border-bottom:2px solid var(--d); border-radius:0; }
+.pdf-thumb-minimal i { background:none; border-bottom:1px solid #e3e3e3; }
+.pdf-thumb-minimal i:first-of-type { background:none; border-bottom:1.5px solid var(--d); }
+.pdf-thumb-minimal u { border-color:var(--d); }
+.pdf-thumb-elegant b { background:none; height:14px; margin:0 14px 3px; border-top:3px double var(--a); border-bottom:3px double var(--a); border-radius:0; }
+.pdf-thumb-elegant i { background:none; border-bottom:1px solid #e6e1d8; }
+.pdf-thumb-elegant i:first-of-type { background:var(--t); border-top:1px solid var(--a); border-bottom-color:var(--a); }
+.pdf-thumb-elegant u { border-top:3px double var(--a); }
+.pdf-thumb-bold { padding-left:17px; }
+.pdf-thumb-bold::before { content:""; position:absolute; inset:0 auto 0 0; width:7px; background:var(--a); }
+.pdf-thumb-bold b { background:var(--d); height:9px; width:85%; }
+.pdf-thumb-bold i { background:#ededf0; }
+.pdf-thumb-bold u { height:7px; border:0; background:var(--a); border-radius:1px; }
+.pdf-thumb-executive b { margin:-8px -9px 4px; height:20px; border-radius:0; background:var(--d); border-bottom:3px solid var(--a); }
+.pdf-thumb-executive i:first-of-type { background:var(--d); }
+.pdf-thumb-executive i:nth-of-type(odd):not(:first-of-type) { background:var(--t); }
+.pdf-thumb-executive u { margin:auto -9px -8px; height:7px; border:0; background:var(--a); }
+.pdf-thumb-aurora b { height:20px; border-radius:5px; background:linear-gradient(90deg, var(--a), color-mix(in oklch shorter hue, var(--a), #e535c8 55%)); }
+.pdf-thumb-aurora i { background:#fff; }
+.pdf-thumb-aurora i:nth-of-type(even) { background:var(--t); }
+.pdf-thumb-aurora u { height:6px; border:0; background:color-mix(in oklch shorter hue, var(--a), #e535c8 55%); }
+.pdf-thumb-typewriter b { background:none; height:12px; border-bottom:1.5px dashed var(--d); border-radius:0;
+  background-image:linear-gradient(var(--d), var(--d)); background-size:60% 4px; background-repeat:no-repeat; }
+.pdf-thumb-typewriter i { background:none; border-bottom:1px dotted #aaa; }
+.pdf-thumb-typewriter i:first-of-type { background:none; border-top:1px dashed var(--d); border-bottom:1px dashed var(--d); }
+.pdf-thumb-typewriter u { border-top:1.5px solid var(--d); }
 .pdf-color { display:flex; flex-direction:column; gap:6px; }
 .pdf-color-label { font-weight:600; font-size:13px; color:var(--muted); }
 .pdf-color-row { display:flex; flex-wrap:wrap; align-items:center; gap:10px; }

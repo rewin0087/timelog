@@ -1,12 +1,24 @@
 <%# Design + accent colour picker for a generated PDF.
     Locals: kind (:report or :invoice), style (PdfStyle to preselect), design_name / color_name (field names),
-    label (optional heading). %>
+    label (optional heading).
+    Designs are radio cards with a mini page preview tinted with the chosen colour (--pdf-accent, kept in sync by
+    the color-presets controller). %>
 <% default = "##{PdfStyle::DEFAULT_COLORS.fetch(kind)}" %>
 <div class="pdf-style" data-controller="color-presets" data-color-presets-default-value="<%= default.downcase %>"
-     data-action="input->color-presets#mark">
-  <label class="pdf-design">Design
-    <%= select_tag design_name, options_for_select(PdfStyle::DESIGNS.map { |key, text| [ text, key ] }, style.design) %>
-  </label>
+     data-action="input->color-presets#mark" style="--pdf-accent:#<%= style.color.downcase %>">
+  <fieldset class="pdf-design">
+    <legend>Design</legend>
+    <div class="pdf-designs">
+      <% PdfStyle::DESIGNS.each do |key, text| %>
+        <label class="pdf-design-card" title="<%= text %>">
+          <%= radio_button_tag design_name, key, style.design == key, class: "pdf-design-radio" %>
+          <span class="pdf-thumb pdf-thumb-<%= key %>" aria-hidden="true"><b></b><i></i><i></i><i></i><i></i><u></u></span>
+          <span class="pdf-design-name"><%= PdfStyle.design_label(key) %></span>
+          <span class="pdf-design-desc"><%= text.split(": ", 2).last %></span>
+        </label>
+      <% end %>
+    </div>
+  </fieldset>
   <div class="pdf-color">
     <span class="pdf-color-label"><%= kind == :invoice ? "Header & table colour" : "Header colour" %></span>
     <div class="pdf-color-row">

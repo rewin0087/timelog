@@ -55,7 +55,8 @@ RSpec.describe "Reports" do
       user.update!(report_design: "modern", report_color: "0F766E")
       get reports_path
       html = Nokogiri::HTML(response.body)
-      expect(html.at_css("select[name=design] option[selected]")["value"]).to eq("modern")
+      expect(html.at_css("input[type=radio][name=design][checked]")["value"]).to eq("modern")
+      expect(html.css(".pdf-design-card").map { |c| c.at_css(".pdf-design-name").text }).to eq(PdfStyle::DESIGNS.keys.map { |k| PdfStyle.design_label(k) })
       expect(html.at_css("input[type=color][name=color]")["value"]).to eq("#0f766e")
       expect(html.css(".pdf-swatch").size).to eq(PdfStyle::PRESETS.size)
     end

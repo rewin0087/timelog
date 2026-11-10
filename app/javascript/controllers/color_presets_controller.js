@@ -1,6 +1,7 @@
 import { Controller } from "@hotwired/stimulus"
 
-// PDF accent colour: preset swatches and a "Default" button fill the colour input; the active swatch is marked.
+// PDF accent colour: preset swatches and a "Default" button fill the colour input; the active swatch is marked
+// and the design card previews take the colour.
 export default class extends Controller {
   static targets = ["input", "swatch"]
   static values = { default: String }
@@ -25,6 +26,7 @@ export default class extends Controller {
 
   mark() {
     const current = this.inputTarget.value.toLowerCase()
+    this.element.style.setProperty("--pdf-accent", current) // tints the design card previews
     this.swatchTargets.forEach((s) => {
       const on = s.dataset.color.toLowerCase() === current
       s.classList.toggle("active", on)
