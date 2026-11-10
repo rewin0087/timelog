@@ -200,12 +200,33 @@ h3 { margin:12px 0 0; font-size:13px; text-transform:uppercase; letter-spacing:.
 .hero input[type=text] { background:rgba(255,255,255,.95); border-color:transparent; padding:12px 14px; }
 .hero input[type=submit] { background:#fff; color:var(--accent); font-weight:700; padding:12px 20px; box-shadow:0 6px 16px -6px rgba(0,0,0,.3); }
 .hero strong { color:#fff; }
+/* Today's todo: a borderless, auto-growing textarea that reads as part of the hero, not as a form box */
+/* The textarea takes the full row so "Log it" drops to the line below it. */
+.hero .todo-form { flex-direction:column; align-items:flex-start; }
+.hero .todo-form input[type=submit] { align-self:flex-end; }
+@media (max-width: 640px) { .hero .todo-form input[type=submit] { align-self:stretch; } }
+.hero .todo-input {
+  align-self:stretch; width:100%; min-width:0;
+  background:transparent; border:0; border-bottom:1px solid color-mix(in srgb, currentColor 30%, transparent); border-radius:10px 10px 0 0; box-shadow:none;
+  padding:8px 12px; color:inherit; font-size:18px; font-weight:500; line-height:1.45;
+  resize:none; overflow-y:auto; field-sizing:content; min-height:calc(1.45em + 16px); max-height:40vh;
+  transition:background-color .15s, color .15s, border-color .15s, border-radius .15s, padding .15s, min-height .15s;
+}
+.hero .todo-input::placeholder { color:currentColor; opacity:.6; }
+.hero .todo-input:hover { border-bottom-color:color-mix(in srgb, currentColor 55%, transparent); }
+/* While typing, switch to a light panel with dark text so what you write is easy to read. */
+/* Focus also adds equal padding above and below, so the box grows a little and the text sits in its vertical middle. */
+.hero .todo-input:focus { padding:18px 16px; min-height:calc(1.45em + 36px); background:rgba(255,255,255,.95); color:var(--fg); border-bottom-color:transparent; border-radius:10px; box-shadow:0 6px 16px -6px rgba(0,0,0,.3); }
+:is([data-theme=midnight], [data-theme=neon], [data-theme=aurora]) .hero .todo-input:focus { color:#1e1b4b; }
 
 /* Stats */
 .stats { display:grid; grid-template-columns:repeat(3, 1fr); gap:16px; margin-bottom:24px; }
 .stat { background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:18px 20px; box-shadow:var(--shadow); }
 .stat-label { color:var(--muted); font-size:12px; font-weight:600; text-transform:uppercase; letter-spacing:.06em; }
 .stat-value { font-size:28px; font-weight:800; letter-spacing:-.03em; margin-top:2px; background:var(--grad); -webkit-background-clip:text; background-clip:text; color:transparent; }
+
+/* Todos may span several lines; keep their line breaks wherever they're listed */
+td.cell-main, .feed-main p { white-space:pre-line; }
 
 /* Layout helpers */
 .toolbar { display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:8px; }
@@ -744,7 +765,7 @@ html { -webkit-text-size-adjust:100%; }
 .activity-timeline-items { list-style:none; margin:0; padding:0; display:grid; gap:6px; }
 .activity-timeline-item { display:flex; align-items:baseline; gap:12px; padding:10px 14px; border:1px solid var(--line); border-radius:12px; background:var(--surface); }
 .activity-timeline-item:hover { background:var(--row-hover, var(--accent-soft)); }
-.activity-timeline-todo { flex:1; min-width:0; overflow-wrap:anywhere; font-weight:500; }
+.activity-timeline-todo { flex:1; min-width:0; overflow-wrap:anywhere; font-weight:500; white-space:pre-line; }
 .activity-timeline-hours { flex:none; color:var(--muted); font-size:14px; font-variant-numeric:tabular-nums; }
 .activity-timeline-sum { display:flex; justify-content:space-between; margin:6px 0 0; padding-top:12px; border-top:2px solid var(--line); font-weight:600; }
 @media (max-width: 640px) {
