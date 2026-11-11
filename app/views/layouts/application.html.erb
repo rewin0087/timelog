@@ -13,7 +13,8 @@
     <%= javascript_importmap_tags %>
   </head>
   <% unlocked = app_unlocked? %>
-  <body data-controller="pdf-preview<%= " idle-lock" if unlocked %>" data-theme="<%= current_theme %>" class="<%= [("with-sidebar" if unlocked), content_for(:body_class)].compact_blank.join(" ") %>"
+  <% collapsed = unlocked && cookies[:sidebar] == "collapsed" %>
+  <body data-controller="pdf-preview<%= " idle-lock" if unlocked %>" data-theme="<%= current_theme %>" class="<%= [("with-sidebar" if unlocked), ("sidebar-collapsed" if collapsed), content_for(:body_class)].compact_blank.join(" ") %>"
         <% if unlocked %>data-idle-lock-minutes-value="<%= Current.user.auto_lock_minutes %>" data-idle-lock-lock-url-value="<%= lock_path %>"
         data-idle-lock-heartbeat-url-value="<%= heartbeat_lock_path %>"<% end %>>
     <% if unlocked %>
@@ -25,7 +26,7 @@
         <nav>
           <% [["Dashboard", root_path, "dashboard", "▦"], ["Manage logs", time_entries_path, "time_entries", "☰"],
               ["Export report", reports_path, "reports", "⇪"], ["Invoices", invoices_path, "invoices", "❏"]].each do |label, path, ctrl, icon| %>
-            <%= link_to path, class: ("active" if controller_name == ctrl) do %><span class="nav-icon" aria-hidden="true"><%= icon %></span><span><%= label %></span><% end %>
+            <%= link_to path, class: ("active" if controller_name == ctrl), title: label do %><span class="nav-icon" aria-hidden="true"><%= icon %></span><span><%= label %></span><% end %>
           <% end %>
         </nav>
         <div class="sidebar-extras" id="sidebar-extras">
@@ -50,6 +51,9 @@
           </div>
         </div>
       </aside>
+      <button type="button" class="sidebar-collapse" data-controller="sidebar" data-action="sidebar#toggle"
+              aria-expanded="<%= !collapsed %>" aria-label="<%= collapsed ? "Expand sidebar" : "Collapse sidebar" %>"
+              title="<%= collapsed ? "Expand sidebar" : "Collapse sidebar" %>"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
     <% end %>
     <main>
       <% unless content_for?(:own_flash) %>

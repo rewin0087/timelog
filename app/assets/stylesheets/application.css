@@ -100,6 +100,38 @@ body.with-sidebar { padding-left:var(--sidebar-w); }
 .sidebar nav a.active .nav-icon { background:var(--grad); color:var(--on-accent); box-shadow:0 6px 14px -6px color-mix(in srgb, var(--accent) 80%, transparent); }
 .sidebar nav a.active::before { content:""; position:absolute; left:-16px; top:8px; bottom:8px; width:4px; border-radius:0 4px 4px 0; background:var(--grad); }
 
+/* Collapsible sidebar (desktop only): the edge button shrinks it to an icon rail. The choice is kept in a
+   cookie (sidebar_controller.js) so the server renders body.sidebar-collapsed and the page never jumps. */
+.sidebar-collapse {
+  position:fixed; z-index:21; top:30px; left:calc(var(--sidebar-w) - 13px); width:26px; height:26px; padding:0;
+  display:grid; place-items:center; border-radius:50%; border:1px solid var(--line); background:var(--surface); color:var(--muted);
+  box-shadow:var(--shadow); cursor:pointer; view-transition-name:sidebar-toggle;
+  transition:left .25s cubic-bezier(.2,.7,.2,1), color .15s, border-color .15s;
+}
+.sidebar-collapse:hover { color:var(--accent); border-color:var(--accent); }
+.sidebar-collapse:focus-visible { outline:none; box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 35%, transparent); }
+.sidebar-collapse svg { width:14px; height:14px; fill:none; stroke:currentColor; stroke-width:2.4; stroke-linecap:round; stroke-linejoin:round; transition:transform .25s; }
+::view-transition-group(sidebar-toggle) { z-index:3; }
+@media (min-width: 861px) {
+  body.with-sidebar, .sidebar { transition:padding-left .25s cubic-bezier(.2,.7,.2,1), width .25s cubic-bezier(.2,.7,.2,1); }
+  .sidebar { overflow:hidden; }
+  .sidebar nav a { white-space:nowrap; }
+  body.sidebar-collapsed { --sidebar-w:76px; }
+  .sidebar-collapsed .sidebar-collapse svg { transform:rotate(180deg); }
+  .sidebar-collapsed .sidebar { padding-inline:12px; }
+  .sidebar-collapsed .brand { padding:0 8px; }
+  .sidebar-collapsed :is(.brand > :not(.brand-mark), .sidebar nav a > span:last-child, .who-name) {
+    position:absolute; width:1px; height:1px; overflow:hidden; clip-path:inset(50%); white-space:nowrap;
+  }
+  .sidebar-collapsed .sidebar nav a { justify-content:center; padding:10px 0; }
+  .sidebar-collapsed .sidebar nav a:hover { transform:none; }
+  .sidebar-collapsed .sidebar nav a.active::before { left:-12px; }
+  .sidebar-collapsed .skins { display:none; }
+  .sidebar-collapsed .who { margin-top:auto; flex-direction:column; padding:12px 0 0; }
+  .sidebar-collapsed .who-actions form:has(button.link) { display:none; }
+}
+@media (max-width: 860px) { .sidebar-collapse { display:none; } }
+
 .menu-toggle { display:none; }
 .sidebar-extras { display:contents; }
 .skins { margin-top:auto; padding:14px 8px 0; border-top:1px solid var(--line); }
@@ -173,7 +205,7 @@ html:is([data-nav-dir=lock], [data-nav-dir=unlock]) main > * { animation:none; }
   from { clip-path:circle(0 at var(--reveal-x) var(--reveal-y)); }
   to   { clip-path:circle(var(--reveal-r) at var(--reveal-x) var(--reveal-y)); }
 }
-html[data-vt=theme] :is(.sidebar, .sidebar nav, main) { view-transition-name:none; }
+html[data-vt=theme] :is(.sidebar, .sidebar nav, .sidebar-collapse, main) { view-transition-name:none; }
 html[data-vt=theme]::view-transition-old(root) { animation:none; }
 html[data-vt=theme]::view-transition-new(root) { animation:skin-reveal .7s cubic-bezier(.65,0,.35,1) both; }
 
