@@ -1,0 +1,5 @@
+<%# Chips that send a message: plain strings (the assistant's follow-ups) or AssistantSuggestions (label + message). %>
+<% suggestions.each do |s| %>
+  <% label, text = s.respond_to?(:label) ? [ s.label, s.message ] : [ s, s ] %>
+  <button type="button" class="chat-chip" data-action="chat#suggest" data-chat-text-param="<%= text %>"><%= label %></button>
+<% end %>

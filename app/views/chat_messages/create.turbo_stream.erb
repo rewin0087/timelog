@@ -1,0 +1,14 @@
+<%= turbo_stream.replace "chat-pending" do %>
+  <%= render "conversations/message", message: @user_message %>
+  <% if @reply %>
+    <%= render "conversations/message", message: @reply %>
+  <% else %>
+    <div class="chat-msg chat-msg-assistant chat-msg-error" role="alert"><div class="chat-bubble"><%= @error %></div></div>
+  <% end %>
+<% end %>
+<%= turbo_stream.update "chat-suggestions" do %>
+  <%= render "conversations/suggestions", suggestions: @conversation.suggestions %>
+<% end %>
+<%= turbo_stream.update "chat-list" do %>
+  <%= render "conversations/list", conversations: @conversations, current: @conversation %>
+<% end %>

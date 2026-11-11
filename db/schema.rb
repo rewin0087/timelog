@@ -10,7 +10,7 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.1].define(version: 2026_11_08_150000) do
+ActiveRecord::Schema[8.1].define(version: 2026_11_11_140000) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
@@ -34,6 +34,28 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_150000) do
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.index ["email_address"], name: "index_administrators_on_email_address", unique: true
+  end
+
+  create_table "chat_messages", force: :cascade do |t|
+    t.bigint "conversation_id", null: false
+    t.string "role", null: false
+    t.text "content"
+    t.jsonb "tool_calls"
+    t.string "tool_call_id"
+    t.jsonb "suggestions", default: [], null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.jsonb "attachments", default: [], null: false
+    t.index ["conversation_id"], name: "index_chat_messages_on_conversation_id"
+  end
+
+  create_table "conversations", force: :cascade do |t|
+    t.bigint "user_id", null: false
+    t.string "title", default: "New chat", null: false
+    t.datetime "created_at", null: false
+    t.datetime "updated_at", null: false
+    t.index ["user_id", "updated_at"], name: "index_conversations_on_user_id_and_updated_at"
+    t.index ["user_id"], name: "index_conversations_on_user_id"
   end
 
   create_table "daily_inspirations", force: :cascade do |t|
@@ -133,10 +155,13 @@ ActiveRecord::Schema[8.1].define(version: 2026_11_08_150000) do
     t.string "invoice_design"
     t.string "invoice_color"
     t.string "invoice_hours_basis", default: "logged", null: false
+    t.string "dashboard_logging", default: "both", null: false
     t.index ["email_address"], name: "index_users_on_email_address", unique: true
   end
 
   add_foreign_key "admin_sessions", "administrators"
+  add_foreign_key "chat_messages", "conversations", on_delete: :cascade
+  add_foreign_key "conversations", "users"
   add_foreign_key "invoice_items", "invoices"
   add_foreign_key "invoices", "users"
   add_foreign_key "sessions", "users"

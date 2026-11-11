@@ -31,5 +31,6 @@ class DashboardController < ApplicationController
     @weekdays_left = stats.weekdays_left
     @missed_days = stats.missed_weekdays
     @recent_months = stats.previous_months(3)
+    @assistant_suggestions = AssistantSuggestions.new(Current.user, today:, missed_days: @missed_days).to_a
   end
 end

@@ -1,0 +1,14 @@
+<% if conversations.empty? %>
+  <p class="muted chat-list-empty">Your chats will show up here.</p>
+<% else %>
+  <ul class="chat-list">
+    <% conversations.each do |c| %>
+      <li>
+        <%= link_to conversation_path(c), class: ["chat-list-item", ("active" if c == current)], aria: { current: (c == current ? "page" : nil) } do %>
+          <span class="chat-list-title"><%= c.title %></span>
+          <span class="chat-list-time muted"><%= c.updated_at.to_date == Date.current ? c.updated_at.strftime("%H:%M") : c.updated_at.strftime("%d %b") %></span>
+        <% end %>
+      </li>
+    <% end %>
+  </ul>
+<% end %>

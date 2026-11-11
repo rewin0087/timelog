@@ -200,4 +200,17 @@ RSpec.describe Invoice do
       expect { Invoice.generate_for(user, Date.new(2026, 9, 1)) }.to raise_error(ActiveRecord::RecordInvalid, /no hours to bill/)
     end
   end
+
+  describe ".preview_for_range" do
+    it "previews a refresh of a saved invoice with only the items given, not the saved ones as well" do
+      user = create(:user)
+      create(:time_entry, user:, log_date: Date.new(2026, 11, 2))
+      Invoice.generate_for(user, Date.new(2026, 11, 1), items: [ { description: "Hosting", quantity: 1, rate: 500 } ])
+
+      preview = Invoice.preview_for_range(user, Date.new(2026, 11, 1), Date.new(2026, 11, 30),
+                                          items: [ { description: "Hosting", quantity: 1, rate: 500 } ])
+      expect(preview.items.map(&:description)).to eq([ "Hosting" ])
+      expect(preview).to be_valid
+    end
+  end
 end

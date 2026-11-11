@@ -25,7 +25,8 @@
                 data-menu-target="button" data-action="menu#toggle"><span class="avatar"><%= initials %></span></button>
         <nav>
           <% [["Dashboard", root_path, "dashboard", "▦"], ["Manage logs", time_entries_path, "time_entries", "☰"],
-              ["Export report", reports_path, "reports", "⇪"], ["Invoices", invoices_path, "invoices", "❏"]].each do |label, path, ctrl, icon| %>
+              ["Export report", reports_path, "reports", "⇪"], ["Invoices", invoices_path, "invoices", "❏"],
+              ["Assistant", conversations_path, "conversations", "✦"]].each do |label, path, ctrl, icon| %>
             <%= link_to path, class: ("active" if controller_name == ctrl), title: label do %><span class="nav-icon" aria-hidden="true"><%= icon %></span><span><%= label %></span><% end %>
           <% end %>
         </nav>

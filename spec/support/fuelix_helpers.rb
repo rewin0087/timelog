@@ -25,3 +25,27 @@ module FuelixHelpers
 end
 
 RSpec.configure { |config| config.include FuelixHelpers }
+
+# Chat-with-tools replies for TimelogAgent: each argument is one FuelIX response, returned in order.
+#   stub_fuelix_chat(tool_call("log_todo", todo: "Fix bug"), reply("Logged it.\n<suggestions>[\"Show today\"]</suggestions>"))
+module FuelixChatHelpers
+  def stub_fuelix_chat(*messages)
+    responses = messages.map { |m| { status: 200, body: { choices: [ { message: m } ] }.to_json, headers: { "Content-Type" => "application/json" } } }
+    stub_request(:post, FuelixHelpers::FUELIX_URL).to_return(*responses)
+  end
+
+  def tool_call(name, id: "call_#{name}", **args)
+    { role: "assistant", content: nil, tool_calls: [ { id:, type: "function", function: { name:, arguments: args.to_json } } ] }
+  end
+
+  def reply(text) = { role: "assistant", content: text }
+
+  # The JSON bodies FuelIX received, in order (each request differs, as the chat history grows).
+  def fuelix_requests
+    WebMock::RequestRegistry.instance.requested_signatures.hash.keys
+      .select { |r| r.uri.host == "api.fuelix.ai" && r.uri.path == "/v1/chat/completions" }
+      .map { |r| JSON.parse(r.body) }
+  end
+end
+
+RSpec.configure { |config| config.include FuelixChatHelpers }

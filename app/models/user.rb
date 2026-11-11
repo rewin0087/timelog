@@ -4,6 +4,7 @@ class User < ApplicationRecord
   has_many :sessions, dependent: :destroy
   has_many :time_entries, dependent: :destroy
   has_many :invoices, dependent: :destroy
+  has_many :conversations, dependent: :destroy
 
   normalizes :email_address, with: ->(e) { e.strip.downcase }
 
@@ -39,10 +40,17 @@ class User < ApplicationRecord
   # Existing logs are re-split whenever the way hours are worked out changes. Invoices keep their stored hours.
   after_update_commit :rebalance_time_entries!, if: -> { saved_change_to_hours_mode? || saved_change_to_monthly_hours? }
 
+  # What the dashboard's top card offers for logging: today's todo form, the AI assistant, or both (as tabs).
+  DASHBOARD_LOGGING = { "both" => "Both", "todo" => "Today's todo only", "assistant" => "Assistant only" }.freeze
+  validates :dashboard_logging, inclusion: { in: DASHBOARD_LOGGING.keys }
+
   AUTO_LOCK_OPTIONS = { "1 minute" => 1, "5 minutes" => 5, "15 minutes" => 15, "30 minutes" => 30, "1 hour" => 60, "Never" => 0 }.freeze
   validates :auto_lock_minutes, inclusion: { in: AUTO_LOCK_OPTIONS.values }
   validates :lock_pin, format: { with: /\A\d{4,8}\z/, message: "must be 4 to 8 digits" }, confirmation: true, allow_nil: true
   validate :lock_pin_not_trivial, if: -> { lock_pin.present? }
+
+  # The dashboard logging choice in effect: always the todo form when the assistant isn't set up.
+  def dashboard_logging_for(assistant_available:) = assistant_available ? dashboard_logging : "todo"
 
   def fixed_target? = hours_mode == "monthly"
   def no_target? = hours_mode == "daily"

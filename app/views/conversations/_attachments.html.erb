@@ -1,0 +1,22 @@
+<div class="chat-attachments">
+  <% attachments.each do |doc| %>
+    <div class="chat-doc <%= "chat-doc-draft" if doc.draft? %>">
+      <span class="chat-doc-icon" aria-hidden="true"><%= doc.icon %></span>
+      <div class="chat-doc-text">
+        <strong><%= doc.title %></strong>
+        <span class="muted"><%= doc.details %></span>
+      </div>
+      <div class="chat-doc-actions">
+        <%= button_tag "Preview", type: "button", class: "btn btn-secondary chat-doc-btn",
+              data: { action: "pdf-preview#open", pdf_preview_url_param: doc.url, pdf_preview_title_param: doc.title,
+                      pdf_preview_save_url_param: doc.save_url } %>
+        <% if doc.draft? %>
+          <%= button_to "Download", doc.save_url, class: "btn chat-doc-btn", title: "Saves the invoice, then downloads it",
+                form: { class: "chip-form", data: { turbo: false } } %>
+        <% else %>
+          <%= link_to "Download", doc.url, class: "btn chat-doc-btn", data: { turbo: false } %>
+        <% end %>
+      </div>
+    </div>
+  <% end %>
+</div>

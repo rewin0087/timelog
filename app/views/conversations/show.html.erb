@@ -1,0 +1,49 @@
+<% content_for :body_class, "chat-page" %>
+<% available = TimelogAgent.available? %>
+<div class="chat-layout" data-controller="chat">
+  <aside class="card chat-sidebar" aria-label="Conversations">
+    <%= link_to "+ New chat", conversations_path, class: "btn chat-new" %>
+    <nav id="chat-list"><%= render "list", conversations: @conversations, current: @conversation %></nav>
+  </aside>
+
+  <section class="card chat-main">
+    <header class="chat-header">
+      <div>
+        <h2><span class="chat-spark" aria-hidden="true">✦</span> <%= @conversation.persisted? ? @conversation.title : "Assistant" %></h2>
+        <p class="muted">Log todos, look up your time logs, and ask about your hours and invoices.</p>
+      </div>
+      <% if @conversation.persisted? %>
+        <%= button_to "Delete", conversation_path(@conversation), method: :delete, class: "link chat-delete",
+              form: { data: { turbo_confirm: "Delete this conversation?" } } %>
+      <% end %>
+    </header>
+
+    <div class="chat-thread" data-chat-target="thread" aria-live="polite">
+      <% if @conversation.new_record? %>
+        <div class="chat-welcome">
+          <p class="chat-welcome-title">Hi <%= Current.user.name.split.first %>, what are you working on?</p>
+          <p class="muted">Tell me what you did and I'll log it — for today or any date. Or ask about your logs, hours left this month, or your invoices.</p>
+        </div>
+      <% else %>
+        <%= render partial: "message", collection: @conversation.visible_messages %>
+      <% end %>
+    </div>
+
+    <div id="chat-suggestions" class="chat-suggestions">
+      <%= render "suggestions", suggestions: @conversation.new_record? ? starter_suggestions : @conversation.suggestions %>
+    </div>
+
+    <% if available %>
+      <%= form_with url: @conversation.persisted? ? conversation_messages_path(@conversation) : conversations_path,
+            class: "chat-form", data: { chat_target: "form", action: "turbo:submit-start->chat#sending turbo:submit-end->chat#sent" } do |f| %>
+        <%= f.text_area :message, rows: 1, required: true, maxlength: 4000, placeholder: "Message the assistant…",
+              aria: { label: "Message" }, autofocus: true,
+              data: { chat_target: "input", action: "keydown->chat#keydown input->chat#resize" } %>
+        <button type="submit" class="chat-send" aria-label="Send" data-chat-target="send"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>
+      <% end %>
+      <p class="chat-hint muted">Enter to send · Shift+Enter for a new line</p>
+    <% else %>
+      <p class="flash alert">The assistant isn't set up yet: add <code>FUELIX_API_KEY</code> to the environment.</p>
+    <% end %>
+  </section>
+</div>

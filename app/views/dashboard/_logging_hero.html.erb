@@ -1,0 +1,73 @@
+<%# The dashboard's top card: today's todo form, the assistant, or both as tabs (User#dashboard_logging). %>
+<% mode = Current.user.dashboard_logging_for(assistant_available: TimelogAgent.available?) %>
+<% show_todo, show_assistant = mode.in?(%w[both todo]), mode.in?(%w[both assistant]) %>
+<% today_label = Date.current.strftime("%A, %d %b %Y") %>
+<section class="card hero logging-hero" <% if mode == "both" %>data-controller="hero-tabs"<% end %>>
+  <div class="hero-head">
+    <% if mode == "both" %>
+      <div class="hero-tabs" role="tablist" aria-label="How to log">
+        <button type="button" role="tab" id="hero-tab-todo" class="hero-tab" aria-selected="true" aria-controls="hero-panel-todo"
+                data-hero-tabs-target="tab" data-tab="todo" data-action="hero-tabs#select keydown->hero-tabs#keydown">Today's todo</button>
+        <button type="button" role="tab" id="hero-tab-assistant" class="hero-tab" aria-selected="false" aria-controls="hero-panel-assistant" tabindex="-1"
+                data-hero-tabs-target="tab" data-tab="assistant" data-action="hero-tabs#select keydown->hero-tabs#keydown"><span aria-hidden="true">✦</span> Assistant</button>
+      </div>
+      <small class="hero-date"><%= today_label %></small>
+    <% else %>
+      <h2><%= mode == "assistant" ? safe_join([ tag.span("✦", "aria-hidden": true), " Assistant" ]) : "Today's todo" %> <small><%= today_label %></small></h2>
+    <% end %>
+
+    <% if TimelogAgent.available? %>
+      <details class="hero-settings">
+        <summary aria-label="Choose what this card shows" title="Choose what this card shows">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg>
+        </summary>
+        <div class="hero-settings-body">
+          <span class="hero-settings-label">Show here</span>
+          <div class="hero-options" role="group" aria-label="Show here">
+            <% User::DASHBOARD_LOGGING.each do |key, label| %>
+              <%= button_to label, dashboard_logging_path, method: :patch, params: { mode: key },
+                    class: ["hero-option", ("active" if key == Current.user.dashboard_logging)],
+                    aria: { pressed: key == Current.user.dashboard_logging }, form: { class: "chip-form" } %>
+            <% end %>
+          </div>
+        </div>
+      </details>
+    <% end %>
+  </div>
+
+  <% if show_todo %>
+    <div id="hero-panel-todo" class="hero-panel" <% if mode == "both" %>role="tabpanel" aria-labelledby="hero-tab-todo" data-hero-tabs-target="panel" data-tab="todo"<% end %>>
+      <%= form_with model: @new_entry, url: today_entry_path, class: "row todo-form", data: { controller: "autogrow" } do |f| %>
+        <%= f.text_area :todo, placeholder: "What are you working on today?", required: true, rows: 1, class: "grow todo-input",
+              aria: { label: "Today's todo" },
+              data: { autogrow_target: "field", action: "input->autogrow#resize focus->autogrow#resize blur->autogrow#resize transitionend->autogrow#resize keydown->autogrow#submitOnModEnter" } %>
+        <%= f.submit "Log it" %>
+      <% end %>
+      <p class="muted"><%= hours_rule(Current.user) %></p>
+      <%= render "time_entries/leave_hint" %>
+    </div>
+  <% end %>
+
+  <% if show_assistant %>
+    <% latest = Current.user.conversations.recent.first %>
+    <div id="hero-panel-assistant" class="hero-panel" <% if mode == "both" %>role="tabpanel" aria-labelledby="hero-tab-assistant" data-hero-tabs-target="panel" data-tab="assistant" hidden<% end %>
+         data-controller="assistant-launch" data-action="turbo:submit-start->assistant-launch#busy">
+      <%= form_with url: conversations_path, class: "row todo-form", data: { controller: "autogrow", assistant_launch_target: "form" } do |f| %>
+        <%= f.text_area :message, required: true, maxlength: 4000, rows: 1, class: "grow todo-input",
+              placeholder: "Tell me what you did, or ask about your hours and invoices", aria: { label: "Ask the assistant" },
+              data: { autogrow_target: "field", action: "input->autogrow#resize focus->autogrow#resize blur->autogrow#resize transitionend->autogrow#resize keydown->assistant-launch#keydown" } %>
+        <%= f.submit "Ask" %>
+      <% end %>
+      <div class="hero-chips">
+        <% assistant_suggestions.each do |s| %>
+          <%= button_to s.label, conversations_path, params: { message: s.message }, class: "chat-chip", form: { class: "chip-form" } %>
+        <% end %>
+      </div>
+      <p class="muted hero-assistant-foot">
+        <span data-assistant-launch-target="hint"><span class="key-hint">Enter to send · Shift+Enter for a new line · </span>
+          <% if latest %><%= link_to "Continue “#{latest.title.truncate(32)}”", conversation_path(latest) %><% else %><%= link_to "Open the chat", conversations_path %><% end %></span>
+        <span class="assistant-status" data-assistant-launch-target="status" hidden><span class="chat-typing" aria-hidden="true"><i></i><i></i><i></i></span> Thinking… you'll go to the chat in a moment.</span>
+      </p>
+    </div>
+  <% end %>
+</section>

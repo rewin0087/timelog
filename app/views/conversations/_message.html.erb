@@ -1,0 +1,7 @@
+<div class="chat-msg chat-msg-<%= message.user? ? "user" : "assistant" %>">
+  <% unless message.user? %><span class="chat-avatar" aria-hidden="true">✦</span><% end %>
+  <div class="chat-bubble">
+    <%= message.user? ? simple_format(message.content, {}, wrapper_tag: "p") : chat_markdown(message.content) %>
+    <% if !message.user? && (docs = ChatAttachment.for(message)).any? %><%= render "conversations/attachments", attachments: docs %><% end %>
+  </div>
+</div>

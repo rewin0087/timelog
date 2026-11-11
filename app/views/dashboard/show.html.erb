@@ -1,14 +1,4 @@
-<section class="card hero">
-  <h2>Today's todo <small><%= Date.current.strftime("%A, %d %b %Y") %></small></h2>
-  <%= form_with model: @new_entry, url: today_entry_path, class: "row todo-form", data: { controller: "autogrow" } do |f| %>
-    <%= f.text_area :todo, placeholder: "What are you working on today?", required: true, rows: 1, class: "grow todo-input",
-          aria: { label: "Today's todo" },
-          data: { autogrow_target: "field", action: "input->autogrow#resize focus->autogrow#resize blur->autogrow#resize transitionend->autogrow#resize keydown->autogrow#submitOnModEnter" } %>
-    <%= f.submit "Log it" %>
-  <% end %>
-  <p class="muted"><%= hours_rule(Current.user) %></p>
-  <%= render "time_entries/leave_hint" %>
-</section>
+<%= render "logging_hero", assistant_suggestions: @assistant_suggestions %>
 
 <%= render "inspirations/frame" %>
 

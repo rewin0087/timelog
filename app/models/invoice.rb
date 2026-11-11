@@ -55,6 +55,7 @@ class Invoice < ApplicationRecord
                     .merge(user:, period_start: from, period_end: to, number: existing&.number || (user.invoices.maximum(:number) || 0) + 1))
     invoice.id = existing&.id # so refreshing an existing invoice doesn't count as an overlap
     items.each_with_index { |item, i| invoice.items.build(item.to_h.symbolize_keys.slice(:description, :quantity, :rate).merge(position: i)) }
+    invoice.association(:items).loaded! # only the items given here: with the id set, Rails would also load the saved ones
     invoice
   end
 
