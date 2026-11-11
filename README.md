@@ -1,6 +1,6 @@
 # Timelog (Time.log)
 
-A small Rails 8 app for contractors to log daily work, export timesheet PDFs, and generate invoices. Each user has their own account, entries, and invoices. It is shown to users as **Time.log**; the codebase keeps the `Timelog` name. A separate admin back office (`/admin`) manages every user's data.
+A small Rails 8 app for contractors to log daily work, export timesheet PDFs, and generate invoices, with an AI assistant that can do all three from a chat. Each user has their own account, entries, invoices, and assistant conversations. It is shown to users as **Time.log**; the codebase keeps the `Timelog` name. A separate admin back office (`/admin`) manages every user's data.
 
 ## Stack
 
@@ -20,6 +20,8 @@ Prerequisites: Ruby 3.4.9 and a running PostgreSQL server (the dev database is `
 
 Or run `bin/setup` to install gems, prepare the database, and start the server in one step.
 
+The AI features (the [assistant](#assistant-assistant) and the [verse of the day and trivia](#verse-of-the-day-and-daily-trivia)) need a FuelIX key: copy `.env.example` to `.env` and set `FUELIX_API_KEY`. Without it the app still works; the assistant shows a setup notice and the verse and trivia use a built-in set.
+
 Open the app and choose **Sign up** (`/signup`). After creating an account you go through a two-step [onboarding](#onboarding-onboarding) (invoice details, then a lock code). Everything after that requires being signed in, onboarded, and unlocked.
 
 For the admin, sign in at `/admin`. In development, `db:seed` creates a super admin `admin@example.com` / `admin-password`. Elsewhere, create one with:
@@ -31,7 +33,7 @@ For the admin, sign in at `/admin`. In development, `db:seed` creates a super ad
 ### Landing, layout, skins, and mobile
 
 - **Landing:** sign in (`/session/new`) and sign up share a landing page with the Time.log intro, feature cards, an animated preview card, and an animated background (drifting colour blobs, a moving grid, rising rings). The animations are switched off when the system asks for reduced motion.
-- **Navigation** lives in a left sidebar. Page changes use the View Transitions API: the old page slides off one window edge while the new one slides in from the other, both moving together. Moving down the sidebar (or forward) slides in from the right; moving up, or the browser's Back button, slides in from the left. The distance is measured from the page to the window edge, so it reaches the edges on any screen width. Visits to the same page (form saves, month paging) cross-fade instead. Lock and unlock use a shutter animation.
+- **Navigation** lives in a left sidebar. On desktop, the round arrow on its edge collapses it to an icon rail (page names show on hover; skins and sign out are hidden until it's expanded). The choice is kept in a `sidebar` cookie, so the server renders the same state on every page. Page changes use the View Transitions API: the old page slides off one window edge while the new one slides in from the other, both moving together. Moving down the sidebar (or forward) slides in from the right; moving up, or the browser's Back button, slides in from the left. The distance is measured from the page to the window edge, so it reaches the edges on any screen width. Visits to the same page (form saves, month paging) cross-fade instead. Lock and unlock use a shutter animation.
 - **Skins:** 13 colour themes, picked from the swatches in the sidebar: Violet (default), Ocean, Sunset, Forest, Candy, Midnight, Rainbow, Lemonade, Ruby, Slate, Mocha, Neon, and Aurora. Midnight, Neon, and Aurora are dark. The choice is saved in the Rails session, so it resets to Violet after signing out. Skins are listed in `app/models/theme.rb` and defined as CSS custom properties in `app/assets/stylesheets/application.css`.
 - **Mobile:** at 860px and below, the sidebar becomes a top bar with a bottom tab bar, and skins and sign out move to the avatar menu. At 640px and below, tables become stacked cards and forms go single-column. On phones, PDF previews open in a new tab rather than a modal.
 
@@ -56,12 +58,29 @@ Protects a signed-in session from anyone else at the same device.
 
 ### Dashboard (`/`)
 
-- Quick-add a todo for **today**. The date is filled in for you.
+- **Top card:** log a todo for **today**, ask the [assistant](#assistant-assistant), or both. The ⚙ in the card picks what it shows (`users.dashboard_logging`): **Both** (default; a **Today's todo | ✦ Assistant** switch, the last tab remembered in the browser), **Today's todo only**, or **Assistant only**. Without a FuelIX key the card always shows today's todo and the ⚙ is hidden.
+  - **Today's todo:** the date is filled in for you. The field blends into the card, grows with multi-line todos, and turns into a light panel while typing; **Cmd/Ctrl+Enter** logs it.
+  - **Assistant:** the same field sends a message (**Enter**; Shift+Enter for a new line) and opens the chat with the reply. Suggestion chips come from the user's data (`AssistantSuggestions`, no AI call): log today, missed weekdays, an uninvoiced last month, hours left; in the last 3 days of a month (and the first 5 of the next) the month's invoice and time log report come first.
 - Shows the current week by default. **Month report** (`?view=month`, optionally `&month=YYYY-MM`) shows a month with previous/next navigation.
 - The activity list can be shown as a **Table** or a **Timeline** (one node per day with its todos and hours, today highlighted). The choice (`?display=table|timeline`) is remembered for the session.
 - **This month's progress:** hours logged vs the target, hours left to log, activities logged, missed weekdays, a meter with an "expected by today" marker, and a per-day hours chart (logged, holiday, missed, still to log).
 - **Last 3 months:** hours logged per month against the target, with each month's weekday count, logged weekdays, and whether it reached the target.
 - **Holidays & leave:** days logged as public holidays, non-working holidays, other holidays, paid leave, or unpaid days, for this month and the last 3 (see [Holidays and leave](#holidays-and-leave)).
+
+### Assistant (`/assistant`)
+
+A chat agent for the user's own time logs and invoices, on its own page (✦ in the sidebar) and in the dashboard's top card. It runs on FuelIX (OpenAI-style chat with tools; same settings as the [verse of the day](#verse-of-the-day-and-daily-trivia)).
+
+- **Logs todos** for today or any date ("yesterday I was on sick leave", "Mon: code review and standup" becomes two todos), then confirms the date and the day's hours. Unclear dates or vague todos get one short question first.
+- **Looks things up:** time logs for a day, week, month, or any range (as a Date | Todo | Hours table with totals); a month's progress (hours left, missed weekdays, hours per remaining weekday); invoices; the account and its settings (bank details are never sent to the AI).
+- **Invoices and reports:** prepares a month's invoice as a **draft** and the [timesheet PDF](#timesheet-export-reports) for a month or range. Each appears under the reply as a card with **Preview** and **Download**; links are built by the app, never written by the model.
+  - Previewing a draft never saves anything (`GET /invoice_drafts/YYYY-MM`). **Download** (or **Save & download** in the preview) saves the invoice and then sends its PDF (`POST /invoice_drafts/YYYY-MM`); clicking it again sends the saved invoice rather than making a second one.
+  - A month that already has its invoice shows the saved one. Asked to update it, the assistant drafts a refresh that keeps the number, extra items, tax, due date, hours basis, and style; only Download applies it.
+  - Reports are never stored: Preview and Download build the PDF from the latest logs.
+- **Proactive:** answers first, then adds one useful detail (missed weekdays, hours left, a month not invoiced yet). Each reply ends with 2–3 follow-up chips specific to the conversation, including a clearer rewording when the question was vague; around the end of a month they include the invoice and report.
+- **Conversations are kept:** every chat is listed beside the open one, named after its first message, and can be deleted. Reopening one replays its history to the model (the latest 60 messages, tool calls and results included), so it carries on where it left off.
+- **Can't:** edit or delete logs, delete invoices, or make custom-range invoices; it points to the right page instead.
+- Replies arrive whole (with a typing indicator), usually in 5–10 seconds. Without `FUELIX_API_KEY` the page shows a setup notice.
 
 ### Holidays and leave
 
@@ -87,7 +106,7 @@ The dashboard and the lock screen show a Bible verse (World English Bible) with 
 - Loaded lazily in a Turbo Frame from `/inspiration`, so a slow AI call never holds up the page. It is served while the screen is locked, because it contains no personal data.
 - Trivia progress and score are kept in the browser (localStorage) per day, so the dashboard and lock screen continue the same round.
 - If FuelIX isn't configured or fails, a built-in set is shown and the AI is tried again after 30 minutes.
-- Settings: `FUELIX_API_KEY`, `FUELIX_API_URL` (default `https://api.fuelix.ai`), and `FUELIX_MODEL` (default `claude-sonnet-4-6`), read from `.env` in development (see `.env.example`). `.env` is git-ignored.
+- Settings: `FUELIX_API_KEY`, `FUELIX_API_URL` (default `https://api.fuelix.ai`), and `FUELIX_MODEL` (default `claude-sonnet-4-6`), read from `.env` in development (see `.env.example`). `.env` is git-ignored. The [assistant](#assistant-assistant) uses the same settings.
 
 ### Manage logs (`/time_entries`)
 
@@ -119,7 +138,7 @@ When the period has logs, an overview sits above the entries: hours logged vs ex
 - **Extra items (optional):** up to 8 extra lines (description, quantity, rate), e.g. reimbursements or allowances, on top of the hours charge.
 - **Tax rate:** prefilled from the profile's default tax rate (0 unless set) and can be changed per invoice.
 - **PDF style:** a [design and colour](#pdf-designs-and-colours), defaulting to the profile's invoice style. The invoice stores the style it was generated with.
-- **Preview PDF** renders the draft invoice exactly as it would be generated, without saving anything (`/invoices/preview`). If the form isn't valid yet (e.g. overlapping dates), the preview explains why.
+- **Preview PDF** renders the draft invoice exactly as it would be generated, without saving anything (`/invoices/preview`). If the form isn't valid yet (e.g. overlapping dates), the preview explains why. The [assistant](#assistant-assistant) offers month invoices the same way: a draft to preview, saved only on download.
 - Invoices are numbered per user (`INV-001`, `INV-002`, …). Regenerating the same period refreshes the existing invoice, replacing its extra items, tax, and style with what is in the form. Overlapping periods are rejected.
 - The invoice is dated the last day of the period and is due on the configured due day of the following month (capped at that month's last day), or on the date picked for custom dates.
 - **Amounts:** the invoice total is the hours charge (hours × rate) plus extra items plus tax (`Invoice#amount`); lists, charts, and the PDF all use the total.
@@ -212,6 +231,13 @@ In both modes a day's hours are split equally between that day's billable entrie
 | `app/services/time_stats.rb` | Per-user monthly, holiday, activity, range, and invoice statistics for the charts |
 | `app/services/admin_stats.rb` | Statistics across all users for the admin |
 | `app/services/report_range.rb` | Turns report params into a date range and label |
+| `app/services/timelog_agent.rb` | The assistant's conversation loop: ask the model, run the tools it calls, repeat until it answers |
+| `app/services/timelog_agent/` | Its parts: `SystemPrompt` (wording in `system_prompt.md.erb`), `History` (what's replayed), `Transcript` (saving the chat log), `Reply` (text and suggestions), `Toolbox`, and one class per tool in `tools/` |
+| `app/services/assistant_suggestions.rb` | Data-driven conversation starters for the dashboard and new chats, including month-end invoice and report |
+| `app/services/fuelix_client.rb` | FuelIX chat completions, with tools for the assistant |
+| `app/models/conversation.rb`, `chat_message.rb` | Assistant conversations and their chat log (OpenAI message format, plus suggestions and attachments) |
+| `app/models/chat_attachment.rb` | Turns a reply's attached invoice, invoice draft, or report into a card with preview and download URLs |
+| `app/models/invoice_draft.rb` | A month's invoice before it's saved: preview without a record, save on download |
 | `app/services/timelog_pdf.rb` | Timesheet PDF in each design |
 | `app/services/invoice_pdf.rb` | Invoice PDF in each design |
 | `app/views/charts/` | Reusable column chart and meter partials (HTML/CSS, follow the skin) |
@@ -221,6 +247,9 @@ In both modes a day's hours are split equally between that day's billable entrie
 | `app/controllers/onboardings_controller.rb` | The two onboarding steps |
 | `app/controllers/lock_settings_controller.rb`, `passwords_controller.rb` | Lock settings and password changes from the profile |
 | `app/controllers/admin/` | Admin back office (base controller with sign-in and permission checks) |
+| `app/controllers/conversations_controller.rb`, `chat_messages_controller.rb` | Assistant page, new conversations, and replies (Turbo Streams) |
+| `app/controllers/invoice_drafts_controller.rb` | Draft invoice preview (never saves) and save-then-download |
+| `app/controllers/dashboard_loggings_controller.rb` | Saves what the dashboard's top card shows |
 | `app/models/session.rb` | Lock state, server-side auto-lock, failed-attempt limit |
 | `app/controllers/locks_controller.rb` | Lock screen, lock, unlock, and activity heartbeat |
 | `app/models/theme.rb` | Available skins and the default |
@@ -230,6 +259,10 @@ In both modes a day's hours are split equally between that day's billable entrie
 | `app/javascript/controllers/theme_controller.js` | Instant skin switching |
 | `app/javascript/controllers/invoice_items_controller.js` | Add/remove extra invoice item rows |
 | `app/javascript/controllers/color_presets_controller.js` | PDF colour swatches |
+| `app/javascript/controllers/chat_controller.js` | Assistant chat: instant message and typing indicator, Enter to send, suggestion chips |
+| `app/javascript/controllers/hero_tabs_controller.js`, `assistant_launch_controller.js` | Dashboard card tabs, and sending to the assistant from it |
+| `app/javascript/controllers/sidebar_controller.js`, `autogrow_controller.js` | Collapsible sidebar; auto-growing todo field |
+| `app/helpers/chat_helper.rb` | Renders the assistant's light Markdown (lists, tables, bold) safely |
 | `lib/tasks/admin.rake` | `bin/rails admin:create` |
 
 ## Development
@@ -247,16 +280,16 @@ RSpec, with FactoryBot, Capybara + [Cuprite](https://github.com/rubycdp/cuprite)
 | Path | Covers |
 | --- | --- |
 | `spec/models` | Validations, lock codes, sessions and auto-lock, hour balancing, holiday and leave kinds (paid vs unpaid), invoice generation and totals, PDF styles, administrator access levels, daily inspiration and its fallback |
-| `spec/services` | Report periods, timesheet and invoice PDF contents and colours in each design, FuelIX client, chart and range statistics |
-| `spec/helpers` | Chart helpers (ticks, percentages, hour/money formatting, masking) |
-| `spec/requests` | Every endpoint: sign in/up/out, onboarding, screen lock, lock settings and password, profile forms, skins, dashboard, logs, reports, invoices (extra items, tax, styles, draft preview), other users' data |
+| `spec/services` | Report periods, timesheet and invoice PDF contents and colours in each design, FuelIX client, chart and range statistics, the assistant (tool loop, history replay, each tool, prompt, suggestions) |
+| `spec/helpers` | Chart helpers (ticks, percentages, hour/money formatting, masking), assistant Markdown rendering and escaping |
+| `spec/requests` | Every endpoint: sign in/up/out, onboarding, screen lock, lock settings and password, profile forms, skins, dashboard and its top-card setting, logs, reports, invoices (extra items, tax, styles, draft preview), assistant conversations and replies, invoice drafts (preview never saves, download saves once), other users' data |
 | `spec/requests/admin` | Admin sign-in, permissions per access level, dashboard, users, timelogs, export, invoices, masking, administrators, skin |
-| `spec/system` | Browser flows: onboarding, quick add, logs CRUD, report period fields and PDF preview, invoices (masking, custom dates with extra items, draft preview with a style), lock screen keypad and shortcut, skins, trivia, mobile layout |
+| `spec/system` | Browser flows: onboarding, quick add, logs CRUD, report period fields and PDF preview, invoices (masking, custom dates with extra items, draft preview with a style), assistant chat (logging, suggestions, history, draft preview vs download), dashboard card tabs, collapsible sidebar, lock screen keypad and shortcut, skins, trivia, mobile layout |
 
 - The factory's default user is fully onboarded (invoice details and a lock code) and bills from time logs. Use `:fixed_rate` for a user whose invoices bill the fixed monthly rate, and `:without_lock`, `:without_invoice_details`, or `:new_signup` for users still onboarding.
 - `pdf_text` and `pdf_colors` (in `spec/support/pdf_helpers.rb`) read a PDF's text and the hex colours it uses.
 - Every example runs at a fixed time (Friday 13 November 2026, 10:00). Tag an example with `at: Time.zone.local(...)` to change it.
-- Tests never call FuelIX: `FUELIX_API_KEY` is cleared and outside network access is blocked; stub it with the helpers in `spec/support/fuelix_helpers.rb`.
+- Tests never call FuelIX: `FUELIX_API_KEY` is cleared and outside network access is blocked; stub it with the helpers in `spec/support/fuelix_helpers.rb`. For the assistant, `stub_fuelix_chat(tool_call("log_todo", todo: "..."), reply("..."))` queues the model's responses in order, and `fuelix_requests` returns what was sent.
 - Browser tests are tagged `:js` (desktop window) or `:mobile` (390×844). Run with `HEADFUL=1` to watch them. Failure screenshots land in `tmp/capybara/`.
 - Not covered: the rate limits on sign-in, unlock, lock settings, password, and admin sign-in (the test cache store is a null store, so they never trigger), the idle timer firing after minutes of real inactivity, cross-tab lock/unlock messages, and how page transitions look.
 
@@ -265,6 +298,6 @@ RSpec, with FactoryBot, Capybara + [Cuprite](https://github.com/rubycdp/cuprite)
 A production `Dockerfile` is included:
 
     docker build -t timelog .
-    docker run -d -p 80:3000 -e RAILS_MASTER_KEY=<value from config/master.key> --name timelog timelog
+    docker run -d -p 80:3000 -e RAILS_MASTER_KEY=<value from config/master.key> -e FUELIX_API_KEY=<key> --name timelog timelog
 
 After deploying, run `bin/rails db:migrate`, and create the first super admin with `bin/rails admin:create EMAIL=... PASSWORD=... NAME=...` (the development seed doesn't run in production). The app exposes a health check at `/up`.
