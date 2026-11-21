@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Runs the app in production mode for the local nginx (http://time.log).
+# Started at login by ~/Library/LaunchAgents/log.time.puma.plist; `rails s` keeps using the dev DB.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+export PATH="$HOME/.rbenv/shims:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+# Shared secrets (FUELIX_*) from .env, then production overrides.
+set -a
+[ -f .env ] && . ./.env
+. ./.env.production
+set +a
+
+mkdir -p tmp/pids log
+exec bundle exec puma -C config/puma.rb -b "tcp://127.0.0.1:${PORT}" --pidfile tmp/pids/production.pid

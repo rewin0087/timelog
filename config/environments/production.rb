@@ -22,10 +22,12 @@ Rails.application.configure do
   # config.asset_host = "http://assets.example.com"
 
   # Assume all access to the app is happening through a SSL-terminating reverse proxy.
-  config.assume_ssl = true
+  # Set DISABLE_SSL=1 when serving over plain HTTP (e.g. the local nginx at http://time.log).
+  ssl = ENV["DISABLE_SSL"].blank?
+  config.assume_ssl = ssl
 
   # Force all access to the app over SSL, use Strict-Transport-Security, and use secure cookies.
-  config.force_ssl = true
+  config.force_ssl = ssl
 
   # Skip http-to-https redirect for the default health check endpoint.
   # config.ssl_options = { redirect: { exclude: ->(request) { request.path == "/up" } } }

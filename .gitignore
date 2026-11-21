@@ -10,3 +10,6 @@
 !/tmp/pids/
 /tmp/pids/*
 !/tmp/pids/.keep
+
+# Precompiled assets for the local production server (bin/prod-deploy)
+/public/assets

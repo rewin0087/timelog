@@ -301,3 +301,24 @@ A production `Dockerfile` is included:
     docker run -d -p 80:3000 -e RAILS_MASTER_KEY=<value from config/master.key> -e FUELIX_API_KEY=<key> --name timelog timelog
 
 After deploying, run `bin/rails db:migrate`, and create the first super admin with `bin/rails admin:create EMAIL=... PASSWORD=... NAME=...` (the development seed doesn't run in production). The app exposes a health check at `/up`.
+
+### Local always-on production (nginx at http://time.log)
+
+On this Mac, `http://time.log` is served by Homebrew nginx in front of a production Puma that starts at login. `bin/rails server` still uses `timelog_development`; the always-on app uses `timelog_production`.
+
+| Piece | Where |
+| --- | --- |
+| App copy that production runs from | `~/apps/timelog` (launchd can't read `~/Documents`) |
+| Puma | `127.0.0.1:3010`, launchd agent `~/Library/LaunchAgents/log.time.puma.plist` (label `log.time.puma`) |
+| nginx site | `config/nginx/time.log.conf`, copied to `/opt/homebrew/etc/nginx/servers/`; `brew services` starts it at login |
+| Settings | `.env.production` (gitignored): `RAILS_ENV`, `PORT`, `DISABLE_SSL=1`, `TIMELOG_DATABASE_PASSWORD` for the `timelog` Postgres role. `FUELIX_*` come from `.env` |
+| Logs | `~/apps/timelog/log/production.log`, `/opt/homebrew/var/log/nginx/time.log.*.log` |
+
+- Ship code changes: `bin/prod-deploy` (copies the code, `bundle install`, `db:migrate`, precompiles assets, restarts Puma).
+- Restart Puma: `launchctl kickstart -k gui/$(id -u)/log.time.puma`. Stop it with `launchctl bootout gui/$(id -u)/log.time.puma`.
+- After editing the nginx config: `cp config/nginx/time.log.conf /opt/homebrew/etc/nginx/servers/ && brew services restart nginx`.
+- Refresh production data from development (overwrites production):
+
+      dropdb timelog_production && createdb -O timelog timelog_production
+      pg_dump -Fc --no-owner --no-privileges timelog_development | PGPASSWORD=... pg_restore --no-owner --no-privileges -h localhost -U timelog -d timelog_production
+      psql timelog_production -c "UPDATE ar_internal_metadata SET value='production' WHERE key='environment'"
